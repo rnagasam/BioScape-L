@@ -1,0 +1,9 @@
+# Emacs
+*~
+\#*\#
+.\#*
+auto-save-list
+.dir-locals.el
+
+# Erlang
+.beam
