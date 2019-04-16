@@ -8,3 +8,17 @@ BioScape^L [1].
 [1] Compagnoni, Adriana et al. “A Calculus of Located Entities.”
 Electronic Proceedings in Theoretical Computer Science 144 (2014):
 41–56. Crossref. Web.
+
+
+Notes
+-----
+
+Erlang repr:
+
+       TERM ::= { null }
+              | { send, Chan, Msg, TERM }
+	      | { recv, Chan, Msg, TERM }
+	      | { new, Chan, TERM }
+	      | { spawn, [ TERM ] }
+	      | { repeat, TERM }
+
