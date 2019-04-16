@@ -1,13 +1,6 @@
 -module(pi).
 -compile([export_all]).
 
-% TERM ::= { null }
-%        | { send, Chan, Msg, TERM }
-%        | { recv, Chan, Msg, TERM }
-%        | { new, Chan, TERM }
-%        | { simul, TERM, TERM }
-%        | { repeat, TERM }
-
 freevars({null}) ->
     sets:new();
 freevars({send, Chan, Msg, P}) ->
@@ -24,44 +17,16 @@ freevars({repeat, P}) ->
 fv(Expr) ->
     sets:to_list(freevars(Expr)).
 
-pick_random([]) ->
-    error({pick_random, "No elements to pick from"});
-pick_random(Ls) ->
-    Index = rand:uniform(length(Ls)),
-    lists:nth(Index, Ls).
-
 lookup(Key, Env) ->
     case lists:keyfind(Key, 1, Env) of
 	{_, Val} -> Val;
 	_Else -> error({key_not_found, Key, Env})
     end.
 
-channel(Name, Listeners, MsgBox) ->
-    receive
-	{send, PName, PPid, Msg} ->
-	    case Listeners of
-		[] -> channel(Name, Listeners, 
-			      queue:in({PPid, PName, Msg}, MsgBox));
-		_ -> {Q, QPid} = pick_random(Listeners),
-		     QPid ! {self(), PName, Msg},
-		     PPid ! {msg_sent},
-		     Ls = lists:delete({Q, QPid}, Listeners),
-		     channel(Name, Ls, MsgBox)
-	    end;
-	{recv, PName, PPid} ->
-	    case queue:is_empty(MsgBox) of
-		true -> channel(Name, [{PName, PPid}|Listeners], MsgBox);
-		false -> {{value, {QPid, QName, Msg}}, Q} = queue:out(MsgBox),
-			 PPid ! {self(), QName, Msg},
-			 QPid ! {msg_sent},
-			 channel(Name, Listeners, Q)
-	    end
-    end.
-
 build_channels([]) ->
     [];
 build_channels([C|Cs]) ->
-    CPid = spawn(?MODULE, channel, [C, [], queue:new()]),
+    CPid = spawn(channel, channel, [C, [], queue:new()]),
     [{C, CPid} | build_channels(Cs)].
 
 value([prog, Cs, Ps]) ->
