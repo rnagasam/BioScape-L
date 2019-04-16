@@ -45,9 +45,9 @@ channel(Name, Listeners, MsgBox) ->
 		_ -> {Q, QPid} = pick_random(Listeners),
 		     QPid ! {self(), PName, Msg},
 		     PPid ! {msg_sent},
-		     lists:delete({Q, QPid}, Listeners)
-	    end,
-	    channel(Name, Listeners, MsgBox);
+		     Ls = lists:delete({Q, QPid}, Listeners),
+		     channel(Name, Ls, MsgBox)
+	    end;
 	{recv, PName, PPid} ->
 	    case queue:is_empty(MsgBox) of
 		true -> channel(Name, [{PName, PPid}|Listeners], MsgBox);
@@ -103,3 +103,4 @@ test_prog1() ->
     [prog, [a, b], [{procA, {send, a, ack, {null}}},
 		    {procB, {recv, a, ack, {send, b, ack, {spawn, [procC]}}}},
 		    {procC, {recv, b, ack, {spawn, [procA, procB]}}}]].
+
