@@ -1,21 +1,5 @@
 -module(pi).
--compile([export_all]).
-
-freevars({null}) ->
-    sets:new();
-freevars({send, Chan, Msg, P}) ->
-    sets:union(sets:from_list([Chan, Msg]), freevars(P));
-freevars({recv, Chan, Msg, P}) ->
-    sets:union(sets:from_list([Chan]), sets:del_element(Msg, freevars(P)));
-freevars({new, Chan, P}) ->
-    sets:del_element(Chan, freevars(P));
-freevars({simul, P, Q}) ->
-    sets:union(freevars(P), freevars(Q));
-freevars({repeat, P}) ->
-    freevars(P).
-
-fv(Expr) ->
-    sets:to_list(freevars(Expr)).
+-export([value/1, test_prog/0, test_prog1/0, test_prog2/0]).
 
 value([prog, Cs, Ps]) ->
     InitEnv = channel:build_channels(Cs) ++ Ps,
