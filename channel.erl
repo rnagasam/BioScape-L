@@ -1,11 +1,18 @@
 -module(channel).
--export([channel/3]).
+-export([build_channels/1, channel/3]).
 
 pick_random([]) ->
     error({pick_random, "No elements to pick from"});
 pick_random(Ls) ->
     Index = rand:uniform(length(Ls)),
     lists:nth(Index, Ls).
+
+build_channels([]) ->
+    [];
+build_channels([C|Cs]) ->
+    CPid = spawn(?MODULE, channel, [C, [], queue:new()]),
+    [{ C, CPid } | build_channels(Cs)].
+
 
 channel(Name, Listeners, MsgBox) ->
     receive
