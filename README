@@ -5,11 +5,6 @@ Attempt at an implementation of a (simplified) version of
 BioScape^L [1].
 
 
-[1] Compagnoni, Adriana et al. “A Calculus of Located Entities.”
-Electronic Proceedings in Theoretical Computer Science 144 (2014):
-41–56. Crossref. Web.
-
-
 Notes
 -----
 
@@ -22,3 +17,15 @@ Erlang repr:
 	      | { spawn, [ TERM ] }
 	      | { repeat, TERM }
 
+Channels need to be killed after all processes terminate.  Create a
+`simul' process that monitors processes.  When a process terminates,
+it sends a { done } message to `simul'.  After receiving a { done }
+from every process, `simul' kills all created channels.
+
+
+References
+----------
+
+[1] Compagnoni, Adriana et al. “A Calculus of Located Entities.”
+Electronic Proceedings in Theoretical Computer Science 144 (2014):
+41–56. Crossref. Web.
