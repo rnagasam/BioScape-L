@@ -21,7 +21,10 @@ build_process(Name, { send, Chan, Msg, P }) ->
     PProc = build_process(Name, P),
     fun (Env) ->
 	    CPid = lookup(Chan, Env),
-	    CPid ! { send, Name, self(), Msg },
+	    Send = if is_atom(Msg) -> lookup(Msg, Env);
+		      true -> Msg
+		   end,
+	    CPid ! { send, Name, self(), Send },
 	    io:format("Process ~p sent message ~p on chan ~p.~n",
 		      [Name, Msg, Chan]),
 	    receive
