@@ -14,6 +14,7 @@ lookup(Key, Env) ->
 
 build_process(Name, { null }) ->
     fun (_) ->
+	    whereis(simul) ! { done },
 	    io:format("Process ~p terminated.~n", [Name])
     end;
 build_process(Name, { send, Chan, Msg, P }) ->
@@ -47,5 +48,6 @@ build_process(Name, { spawn, Ps }) ->
 	    Procs = lists:map(fun (X) -> lookup(X, Env) end, Ps),
 	    [spawn(?MODULE, eval, [P, Proc, Env])
 	     || { P, Proc } <- lists:zip(Ps, Procs)],
+	    [whereis(simul) ! { create } || _ <- Ps],
 	    io:format("Process ~p spawn'd processes ~p.~n", [Name, Ps])
     end.

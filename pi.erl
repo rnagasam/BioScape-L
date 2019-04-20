@@ -1,8 +1,11 @@
 -module(pi).
--export([value/1, test_prog/0, test_prog1/0, test_prog2/0]).
+-export([run/1, test_prog/0, test_prog1/0, test_prog2/0]).
 
-value([prog, Cs, Ps]) ->
-    InitEnv = channel:build_channels(Cs) ++ Ps,
+run([prog, Cs, Ps]) ->
+    Chans = channel:build_channels(Cs),
+    InitEnv = Chans ++ Ps,
+    SPid = spawn(simul, simul, [Chans, length(Ps)]),
+    register(simul, SPid),
     [spawn(eval, eval, [Name, P, InitEnv]) || { Name, P } <- Ps].
 
 test_prog() ->
