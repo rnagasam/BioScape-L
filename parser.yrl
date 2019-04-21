@@ -2,10 +2,12 @@ Nonterminals
 expression.
 
 Terminals
-num id 'send' 'recv' dot 'null' oParen cParen.
+num id 'send' 'recv' dot 'null' oParen cParen oBrace cBrace 'define' name.
 
 Rootsymbol expression.
 
+expression ->
+    define name oBrace expression cBrace : { define, '$2', '$4' }.
 expression ->
     num : { numExp, '$1' }.
 expression ->
