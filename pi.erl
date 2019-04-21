@@ -1,5 +1,6 @@
 -module(pi).
--export([run/1, test_prog/0, test_prog1/0, test_prog2/0, test_prog3/0]).
+-export([run/1, test_prog/0, test_prog1/0, test_prog2/0, test_prog3/0,
+	 parse_string/1]).
 
 run([prog, Cs, Ps]) ->
     Chans = channel:build_channels(Cs),
@@ -24,3 +25,7 @@ test_prog2() ->
 test_prog3() ->
     [prog, [a], [{procA, {send, a, a, {recv, a, ack, {null}}}},
 		 {procB, {recv, a, x, {send, x, "ack", {null}}}}]].
+
+parse_string(Str) ->
+    {_ResultL, Tks, _L} = lexer:string(Str),
+    parser:parse(Tks).
