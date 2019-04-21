@@ -8,19 +8,45 @@ BioScape^L [1].
 Notes
 -----
 
-Erlang repr:
+Erlang repr (pi-calculus):
 
-       TERM ::= { null }
-              | { send, Chan, Msg, TERM }
-	      | { recv, Chan, Msg, TERM }
-	      | { new, Chan, TERM }
-	      | { spawn, [ TERM ] }
-	      | { repeat, TERM }
+    TERM ::= { null }
+           | { send, Chan, Msg, TERM }
+           | { recv, Chan, Msg, TERM }
+           | { new, Chan, TERM }
+           | { spawn, [ TERM ] }
+           | { repeat, TERM }
 
-Channels need to be killed after all processes terminate.  Create a
-`simul' process that monitors processes.  When a process terminates,
-it sends a { done } message to `simul'.  After receiving a { done }
-from every process, `simul' kills all created channels.
+
+BioScape^L abstract syntax
+
+    P, Q ::= 0                                         empty process
+           | X(d)_d                          located entity instance
+           | P | Q                              parallel composition
+           | (va@d,d:chan{T}).P                          restriction
+
+    M ::= pi.P [+ M]                      choice of prefixed process
+
+    pi ::= delay@r                                             delay
+         | !u(d)                                              output
+         | ?u(x)                                               input
+         | mov                                                  move
+
+    N ::= M | (va@d,d:chan{T}).N                   restricted choice
+
+    u ::= a | b | ... | x | y | ...                      identifiers
+
+    d ::= u | c | this | d1,...,dn | () | d.i | op(d)    expressions
+
+    v ::= a | b | ... | c | () | v1,...,vn         expression values
+
+    T ::= chan{T} | fl | T1 x ... x Tn | Top         expresion types
+
+    D ::= 0 | D,X(x:T) = N^{geom}                 entity definitions
+
+    E ::= 0 | E,a@r,rad:chan{T}                 channel declarations
+
+    G ::= 0 | G,X:T | G,u:T                         type environment
 
 
 References
