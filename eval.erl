@@ -1,30 +1,31 @@
 -module(eval).
--export([lookup/2, build_process/2, eval/3]).
+-export([lookup/2, build_process/2, eval/2]).
 
-eval(Name, P, InitEnv) ->
-    (build_process(Name, P))(InitEnv).
+eval(P, Env) ->
+    P(Env).
 
 lookup(Key, Env) ->
-    case lists:keyfind(Key, 1, Env) of
-	{ _, Val } ->
-	    Val;
+    case lists:keyfind(Key, 2, Env) of
+	{ Type, _Key, Val } ->
+	    {Type, Val};
 	_Else ->
 	    error({key_not_found, Key, Env})
     end.
 
 build_process(Name, { null }) ->
-    fun (_) ->
+    fun (_Env) ->
 	    whereis(simul) ! { done },
 	    io:format("Process ~p terminated.~n", [Name])
     end;
 build_process(Name, { send, Chan, Msg, P }) ->
     PProc = build_process(Name, P),
     fun (Env) ->
-	    CPid = lookup(Chan, Env),
-	    Send = if is_atom(Msg) -> lookup(Msg, Env);
-		      true -> Msg
-		   end,
-	    CPid ! { send, Name, self(), Send },
+	    { _, CPid } = lookup(Chan, Env),
+	    case is_atom(Msg) of
+		true  -> { _, Val } = lookup(Msg, Env),
+			 CPid ! { send, Name, self(), Val };
+		false -> CPid ! { send, Name, self(), Msg }
+	    end,
 	    io:format("Process ~p sent message ~p on chan ~p.~n",
 		      [Name, Msg, Chan]),
 	    receive
@@ -35,15 +36,15 @@ build_process(Name, { send, Chan, Msg, P }) ->
 build_process(Name, { recv, Chan, Bind, P }) ->
     PProc = build_process(Name, P),
     fun (Env) ->
-	    CPid = lookup(Chan, Env),
+	    { chan, CPid } = lookup(Chan, Env),
 	    CPid ! { recv, Name, self() },
 	    io:format("Process ~p waiting to recv message on chan ~p.~n",
 		      [Name, Chan]),
 	    receive
-		{ CPid, _, Msg } ->
+		{ CPid, _ProcName, Msg } ->
 		    io:format("Process ~p recv'd message ~p on chan ~p.~n",
 			      [Name, Msg, Chan]),
-		    PProc([{ Bind, Msg } | Env])
+		    PProc([{ var, Bind, Msg } | Env])
 	    end
     end;
 build_process(Name, { spawn, Ps, Q }) ->
@@ -52,7 +53,7 @@ build_process(Name, { spawn, Ps, Q }) ->
 	    Procs = lists:map(fun (X) -> lookup(X, Env) end, Ps),
 	    [spawn(?MODULE, eval, [P, Proc, Env])
 	     || { P, Proc } <- lists:zip(Ps, Procs)],
-	    [whereis(simul) ! { create } || _ <- Ps],
+	    [whereis(simul) ! { create } || _P <- Ps],
 	    io:format("Process ~p spawn'd processes ~p.~n", [Name, Ps]),
 	    QProc(Env)
     end.
