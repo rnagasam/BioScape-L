@@ -1,12 +1,27 @@
 CS 694 Final Project
---------------------
 
-Attempt at an implementation of a (simplified) version of
-BioScape^L [1].
+Attempt at an implementation of a (simplified) version of BioScape^L
+[1].
+
+
+Todo
+
+  1. Run time checks in `build_process' (eval.erl)
+     - e.g. cannot send message directly to a process
+  2. Entity geometries
+     - location in space
+     - `mov' command
+     - diffusion
+     - random movement
+     - `this' message
+     - `build_process' should return a function with 2 parameters
+  3. Parameters in process definitions
+     - for private channels, other input
+  4. Parser
+  5. Type checker
 
 
 Notes
------
 
 Erlang repr (pi-calculus):
 
@@ -50,7 +65,6 @@ BioScape^L abstract syntax
 
 
 References
-----------
 
 [1] Compagnoni, Adriana et al. “A Calculus of Located Entities.”
 Electronic Proceedings in Theoretical Computer Science 144 (2014):

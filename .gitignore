@@ -6,4 +6,6 @@ auto-save-list
 .dir-locals.el
 
 # Erlang
-.beam
+*.beam
+lexer.erl
+parser.erl
