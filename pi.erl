@@ -15,8 +15,8 @@ test_prog() ->
 % A + B <-> C
 test_prog1() ->
     [prog, [a, b], [{procA, {send, a, "ack", {null}}},
-		    {procB, {recv, a, ack, {send, b, "ack", {spawn, [procC]}}}},
-		    {procC, {recv, b, ack, {spawn, [procA, procB]}}}]].
+		    {procB, {recv, a, ack, {send, b, "ack", {spawn, [procC], {null}}}}},
+		    {procC, {recv, b, ack, {spawn, [procA, procB], {null}}}}]].
 
 test_prog2() ->
     [prog, [a], [{procA, {send, a, "ack", {recv, a, ack, {null}}}},
