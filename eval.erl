@@ -50,9 +50,8 @@ build_process(Name, { recv, Chan, Bind, P }) ->
 build_process(Name, { spawn, Ps, Q }) ->
     QProc = build_process(Name, Q),
     fun (Env) ->
-	    Procs = lists:map(fun (X) -> lookup(X, Env) end, Ps),
-	    [spawn(?MODULE, eval, [P, Proc, Env])
-	     || { P, Proc } <- lists:zip(Ps, Procs)],
+	    Procs = [lookup(P, Env) || P <- Ps],
+	    [spawn(?MODULE, eval, [Proc, Env]) || { _, Proc } <- Procs],
 	    [whereis(simul) ! { create } || _P <- Ps],
 	    io:format("Process ~p spawn'd processes ~p.~n", [Name, Ps]),
 	    QProc(Env)
