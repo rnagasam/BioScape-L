@@ -1,5 +1,6 @@
 -module(pi).
 -export([run/1, test_prog/0, test_prog1/0, test_prog2/0, test_prog3/0, parse_string/1]).
+-register(simul).
 
 run([prog, ChanNames, ProcDefs, RunCmds]) ->
     Chans = channel:build_channels(ChanNames),
@@ -32,10 +33,10 @@ test_prog() ->
      [{p, 1}, {q, 1}]].
 
 test_prog1() -> % A + B <-> C
-    [prog, [a, b],
+    [prog, [a],
      [{define, procA, geomA, {send, a, "ack", {null}}},
-      {define, procB, geomB, {recv, a, ack, {send, b, "ack", {spawn, [procC], {null}}}}},
-      {define, procC, geomC, {recv, b, ack, {spawn, [procA, procB], {null}}}}],
+      {define, procB, geomB, {recv, a, ack, {spawn, [procC], {null}}}},
+      {define, procC, geomC, {spawn, [procA, procB], {null}}}],
      [{procA, 1}, {procB, 1}]].
 
 test_prog2() ->
