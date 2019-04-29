@@ -7,7 +7,8 @@ Attempt at an implementation of a (simplified) version of BioScape^L
 Todo
 
   1. Run time checks in `build_process' (eval.erl)
-     - e.g. cannot send message directly to a process
+     - cannot send message directly to a process
+     - cannot recv messgae directly from a process
   2. Entity geometries
      - location in space
      - `mov' command
