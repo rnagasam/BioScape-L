@@ -21,7 +21,10 @@ build_process(Name, { null }) ->
 build_process(Name, { send, Chan, Msg, P }) ->
     PProc = build_process(Name, P),
     fun (Env, Geom) ->
-	    { _, CPid } = lookup(Chan, Env),
+	    CPid = case lookup(Chan, Env) of
+		       { _Type, Ent } when is_pid(Ent) -> Ent;
+		       Else -> error({not_a_channel, Else})
+		   end,
 	    case Msg of
 		this -> CPid ! { send, Name, self(), Geom };
 		_ when is_atom(Msg) ->
@@ -39,7 +42,10 @@ build_process(Name, { send, Chan, Msg, P }) ->
 build_process(Name, { recv, Chan, Bind, P }) ->
     PProc = build_process(Name, P),
     fun (Env, Geom) ->
-	    { chan, CPid } = lookup(Chan, Env),
+	    CPid = case lookup(Chan, Env) of
+		       { _Type, Ent } when is_pid(Ent) -> Ent;
+		       Else -> error({not_a_channel, Else})
+		   end,
 	    CPid ! { recv, Name, self() },
 	    io:format("Process ~p waiting to recv message on chan ~p.~n",
 		      [Name, Chan]),
