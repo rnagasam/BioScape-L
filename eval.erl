@@ -20,23 +20,25 @@ build_process(Name, { null }) ->
     end;
 build_process(Name, { send, Chan, Msg, P }) ->
     PProc = build_process(Name, P),
-    fun (Env, _Geom) ->
+    fun (Env, Geom) ->
 	    { _, CPid } = lookup(Chan, Env),
-	    case is_atom(Msg) of
-		true  -> { _, Val } = lookup(Msg, Env),
-			 CPid ! { send, Name, self(), Val };
-		false -> CPid ! { send, Name, self(), Msg }
+	    case Msg of
+		this -> CPid ! { send, Name, self(), Geom };
+		_ when is_atom(Msg) ->
+		    { _, Val } = lookup(Msg, Env),
+		    CPid ! { send, Name, self(), Val };
+		_ -> CPid ! { send, Name, self(), Msg }
 	    end,
 	    io:format("Process ~p sent message ~p on chan ~p.~n",
 		      [Name, Msg, Chan]),
 	    receive
 		{ msg_sent } ->
-		    PProc(Env, _Geom)
+		    PProc(Env, Geom)
 	    end
     end;
 build_process(Name, { recv, Chan, Bind, P }) ->
     PProc = build_process(Name, P),
-    fun (Env, _Geom) ->
+    fun (Env, Geom) ->
 	    { chan, CPid } = lookup(Chan, Env),
 	    CPid ! { recv, Name, self() },
 	    io:format("Process ~p waiting to recv message on chan ~p.~n",
@@ -45,15 +47,15 @@ build_process(Name, { recv, Chan, Bind, P }) ->
 		{ CPid, _ProcName, Msg } ->
 		    io:format("Process ~p recv'd message ~p on chan ~p.~n",
 			      [Name, Msg, Chan]),
-		    PProc([{ var, Bind, Msg } | Env], _Geom)
+		    PProc([{ var, Bind, Msg } | Env], Geom)
 	    end
     end;
 build_process(Name, { spawn, Ps, Q }) ->
     QProc = build_process(Name, Q),
-    fun (Env, _Geom) ->
+    fun (Env, Geom) ->
 	    Procs = [lookup(P, Env) || P <- Ps],
 	    [spawn(?MODULE, eval, [Proc, Env]) || { _, Proc } <- Procs],
 	    [whereis(simul) ! { create } || _P <- Ps],
 	    io:format("Process ~p spawn'd processes ~p.~n", [Name, Ps]),
-	    QProc(Env, _Geom)
+	    QProc(Env, Geom)
     end.
