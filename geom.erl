@@ -13,10 +13,21 @@ make_pos(N, M) ->
 make_geom(Pos, Rad) ->
     #geom{ pos = Pos, radius = Rad }.
 
+get_pos(Geom) ->
+    Geom#geom.pos.
+
+get_radius(Geom) ->
+    Geom#geom.radius.
+
 translate(Geom, X, Y) ->
     NewPos = #pos{ x = Geom#geom.pos#pos.x + X,
 		   y = Geom#geom.pos#pos.y + Y },
     Geom#geom{ pos = NewPos, radius = Geom#geom.radius }.
+
+random_translate(Geom, Max) ->
+    RandX = rand:uniform() * Max - (Max/2),
+    RandY = rand:uniform() * Max - (Max/2),
+    translate(Geom, RandX, RandY).
     
 scale(Geom, R) ->
     Geom#geom{ pos = Geom#geom.pos, radius = Geom#geom.radius * R }.

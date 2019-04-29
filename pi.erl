@@ -28,7 +28,7 @@ parse_string(Str) ->
 
 test_prog() ->
     [prog, [a],
-     [{define, p, geomP, {send, a, this, {null}}},
+     [{define, p, geomP, {move, {send, a, this, {null}}}},
       {define, q, geomQ, {recv, a, x, {null}}}],
      [{p, 1}, {q, 1}]].
 

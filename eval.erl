@@ -1,5 +1,7 @@
 -module(eval).
 -export([lookup/2, build_process/2, eval/2]).
+-define(DEFAULT_MOVE_LIMIT, 2).
+-define(DEFAULT_DIFFUSE_RATE, 0.5).
 
 eval(P, Env) ->
     InitGeom = geom:default(),
@@ -14,9 +16,10 @@ lookup(Key, Env) ->
     end.
 
 build_process(Name, { null }) ->
-    fun (_Env, _Geom) ->
+    fun (_Env, Geom) ->
 	    whereis(simul) ! { done },
-	    io:format("Process ~p terminated.~n", [Name])
+	    io:format("Process ~p terminated at ~p.~n",
+		      [Name, geom:get_pos(Geom)])
     end;
 build_process(Name, { send, Chan, Msg, P }) ->
     PProc = build_process(Name, P),
@@ -36,7 +39,8 @@ build_process(Name, { send, Chan, Msg, P }) ->
 		      [Name, Msg, Chan]),
 	    receive
 		{ msg_sent } ->
-		    PProc(Env, Geom)
+		    Loc = geom:random_translate(Geom, ?DEFAULT_DIFFUSE_RATE),
+		    PProc(Env, Loc)
 	    end
     end;
 build_process(Name, { recv, Chan, Bind, P }) ->
@@ -53,15 +57,23 @@ build_process(Name, { recv, Chan, Bind, P }) ->
 		{ CPid, _ProcName, Msg } ->
 		    io:format("Process ~p recv'd message ~p on chan ~p.~n",
 			      [Name, Msg, Chan]),
-		    PProc([{ var, Bind, Msg } | Env], Geom)
+		    Loc = geom:random_translate(Geom, ?DEFAULT_DIFFUSE_RATE),
+		    PProc([{ var, Bind, Msg } | Env], Loc)
 	    end
     end;
 build_process(Name, { spawn, Ps, Q }) ->
-    QProc = build_process(Name, Q),
+    PProc = build_process(Name, Q),
     fun (Env, Geom) ->
 	    Procs = [lookup(P, Env) || P <- Ps],
 	    [spawn(?MODULE, eval, [Proc, Env]) || { _, Proc } <- Procs],
 	    [whereis(simul) ! { create } || _P <- Ps],
 	    io:format("Process ~p spawn'd processes ~p.~n", [Name, Ps]),
-	    QProc(Env, Geom)
+	    Loc = geom:random_translate(Geom, ?DEFAULT_DIFFUSE_RATE),
+	    PProc(Env, Loc)
+    end;
+build_process(Name, { move, P }) ->
+    PProc = build_process(Name, P),
+    fun (Env, Geom) ->
+	    Loc = geom:random_translate(Geom, ?DEFAULT_MOVE_LIMIT),
+	    PProc(Env, Loc)
     end.
