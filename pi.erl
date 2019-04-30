@@ -1,6 +1,5 @@
 -module(pi).
--export([run/1, test_prog/0, test_prog1/0, test_prog2/0,
-	 test_prog3/0, test_prog4/0, parse_string/1]).
+-export([run/1, spawn_entity/3, parse_string/1]).
 -register(simul).
 
 run([prog, ChanNames, ProcDefs, RunCmds]) ->
