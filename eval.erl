@@ -15,6 +15,13 @@ lookup(Key, Env) ->
 	    error({key_not_found, Key, Env})
     end.
 
+get_channel(Chan, Env) ->
+    case lookup(Chan, Env) of
+	{ _Type, Ent } when is_pid(Ent) ->
+	    Ent;
+	Else -> error({not_a_channel, Else})
+    end.
+
 build_process(Name, { null }) ->
     fun (_Env, Geom) ->
 	    whereis(simul) ! { done },
@@ -25,10 +32,7 @@ build_process(Name, { send, Chan, Msg, P }) ->
     PProc = build_process(Name, P),
     fun (Env, Geom) ->
 	    Loc = geom:random_translate(Geom, ?DEFAULT_DIFFUSE_RATE),
-	    CPid = case lookup(Chan, Env) of
-		       { _Type, Ent } when is_pid(Ent) -> Ent;
-		       Else -> error({not_a_channel, Else})
-		   end,
+	    CPid = get_channel(Chan, Env),
 	    case Msg of
 		this -> CPid ! { send, Name, self(), none, Loc };
 		_ when is_atom(Msg) ->
@@ -47,10 +51,7 @@ build_process(Name, { recv, Chan, Bind, P }) ->
     PProc = build_process(Name, P),
     fun (Env, Geom) ->
 	    Loc = geom:random_translate(Geom, ?DEFAULT_DIFFUSE_RATE),
-	    CPid = case lookup(Chan, Env) of
-		       { _Type, Ent } when is_pid(Ent) -> Ent;
-		       Else -> error({not_a_channel, Else})
-		   end,
+	    CPid = get_channel(Chan, Env),
 	    CPid ! { recv, Name, self(), Loc },
 	    io:format("Process ~p waiting to recv message on chan ~p.~n",
 		      [Name, Chan]),
