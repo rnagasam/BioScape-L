@@ -2,9 +2,9 @@
 -export([simul/2]).
 
 % For now, `simul' is used to cleanup channels after finishing a run.
-% `simul' additionally maintains a list of process info objects, where
-% each element is a tuple containing the processes Pid and location.
-% It is the responsibility of the process to update `simul' with its
+% `simul' additionally maintains a dictionary of process info objects,
+% with entity Pids as keys and locations as values.  It is the
+% responsibility of the process/entity to update `simul' with its
 % location information.
 simul(Chans, 0, _ProcsInfo) ->
     [exit(C, kill) || { _, C } <- Chans];
