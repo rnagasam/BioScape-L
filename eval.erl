@@ -77,4 +77,10 @@ build_process(Name, { move, P }) ->
     fun (Env, Geom) ->
 	    Loc = geom:random_translate(Geom, ?DEFAULT_MOVE_LIMIT),
 	    PProc(Env, Loc)
+    end;
+build_process(Name, { choice, Ps }) ->
+    fun (Env, Geom) ->
+	    Route = lists:nth(rand:uniform(length(Ps)), Ps),
+	    io:format("Chose: ~p~n", [Route]),
+	    (build_process(Name, Route))(Env, Geom)
     end.

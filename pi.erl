@@ -1,5 +1,6 @@
 -module(pi).
--export([run/1, test_prog/0, test_prog1/0, test_prog2/0, test_prog3/0, parse_string/1]).
+-export([run/1, test_prog/0, test_prog1/0, test_prog2/0,
+	 test_prog3/0, test_prog4/0, parse_string/1]).
 -register(simul).
 
 run([prog, ChanNames, ProcDefs, RunCmds]) ->
@@ -50,3 +51,9 @@ test_prog3() ->
      [{define, procA, geomA, {send, a, a, {recv, a, ack, {null}}}},
       {define, procB, geomB, {recv, a, x, {send, x, "ack", {null}}}}],
      [{procA, 1}, {procB, 1}]].
+
+test_prog4() ->
+    [prog, [a],
+     [{define, procA, geomA, {choice, [{send, a, "ack", {null}},
+				       {recv, a, "ack", {null}}]}}],
+     [{procA, 100}]].
