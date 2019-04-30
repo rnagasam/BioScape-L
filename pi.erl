@@ -26,34 +26,3 @@ spawn_entity(P, N, InitEnv) ->
 parse_string(Str) ->
     {_ResultL, Tks, _L} = lexer:string(Str),
     parser:parse(Tks).
-
-test_prog() ->
-    [prog, [a],
-     [{define, p, geomP, {move, {send, a, this, {null}}}},
-      {define, q, geomQ, {recv, a, x, {null}}}],
-     [{p, 1}, {q, 1}]].
-
-test_prog1() -> % A + B <-> C
-    [prog, [a],
-     [{define, procA, geomA, {send, a, "ack", {null}}},
-      {define, procB, geomB, {recv, a, ack, {spawn, [procC], {null}}}},
-      {define, procC, geomC, {spawn, [procA, procB], {null}}}],
-     [{procA, 1}, {procB, 1}]].
-
-test_prog2() ->
-    [prog, [a],
-     [{define, procA, geomA, {send, a, "ack", {recv, a, ack, {null}}}},
-      {define, procB, geomB, {recv, a, ack, {null}}}],
-     [{procA, 1}, {procB, 1}]].
-
-test_prog3() ->
-    [prog, [a],
-     [{define, procA, geomA, {send, a, a, {recv, a, ack, {null}}}},
-      {define, procB, geomB, {recv, a, x, {send, x, "ack", {null}}}}],
-     [{procA, 1}, {procB, 1}]].
-
-test_prog4() ->
-    [prog, [a],
-     [{define, procA, geomA, {choice, [{send, a, "ack", {null}},
-				       {recv, a, "ack", {null}}]}}],
-     [{procA, 100}]].
