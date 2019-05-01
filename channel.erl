@@ -16,7 +16,7 @@ build_channels([C|Cs]) ->
 
 channel(Name, Listeners, MsgBox) ->
     receive
-	{ send, ProcName, ProcPid, Msg } ->
+	{ send, ProcName, ProcPid, Msg, _Location } ->
 	    case Listeners of
 		[] ->
 		    Msgs = queue:in({ ProcPid, ProcName, Msg }, MsgBox),
@@ -28,7 +28,7 @@ channel(Name, Listeners, MsgBox) ->
 		    Ls = lists:delete({ Q, QPid }, Listeners),
 		    channel(Name, Ls, MsgBox)
 	    end;
-	{ recv, ProcName, ProcPid } ->
+	{ recv, ProcName, ProcPid, _Location } ->
 	    case queue:is_empty(MsgBox) of
 		true ->
 		    Ls = [{ ProcName, ProcPid } | Listeners],
