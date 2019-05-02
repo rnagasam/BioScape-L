@@ -9,7 +9,7 @@ run([prog, ChanNames, ProcDefs, RunCmds]) ->
     NProcs = lists:foldr(fun ({ _P, X }, Acc) -> X + Acc end, 0, RunCmds),
     ChansEnv = [{ chan, C, Chan } || { C, Chan } <- Chans],
     ProcsEnv = [{ proc, P, Proc } || { P, Proc } <- Procs],
-    Simul = spawn(simul, simul, [Chans, NProcs]),
+    Simul = spawn(simul, simul, [Chans, NProcs, dict:new()]),
     register(simul, Simul),
     [spawn_entity(P, N, ChansEnv ++ ProcsEnv) || { P, N } <- RunCmds].
 

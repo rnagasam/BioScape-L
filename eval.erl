@@ -5,7 +5,17 @@
 
 eval(P, Env) ->
     InitGeom = geom:default(),
+    case whereis(simul) of
+	undefined -> error({no_simulation_running});
+	SPid -> SPid ! { update, self(), InitGeom }
+    end,
     P(Env, InitGeom).
+
+update_location(Pid, Loc) ->
+    case whereis(simul) of
+	undefined -> error({no_simulation_running});
+	SPid -> SPid ! { update, Pid, Loc }
+    end.
 
 lookup(Key, Env) ->
     case lists:keyfind(Key, 2, Env) of
@@ -24,7 +34,7 @@ get_channel(Chan, Env) ->
 
 build_process(Name, { null }) ->
     fun (_Env, Geom) ->
-	    whereis(simul) ! { done },
+	    whereis(simul) ! { done, self() },
 	    io:format("Process ~p terminated at ~p.~n",
 		      [Name, geom:get_pos(Geom)])
     end;
@@ -32,6 +42,7 @@ build_process(Name, { send, Chan, Msg, P }) ->
     PProc = build_process(Name, P),
     fun (Env, Geom) ->
 	    Loc = geom:random_translate(Geom, ?DEFAULT_DIFFUSE_RATE),
+	    update_location(self(), Loc),
 	    CPid = get_channel(Chan, Env),
 	    case Msg of
 		this -> CPid ! { send, Name, self(), none, Loc };
@@ -51,6 +62,7 @@ build_process(Name, { recv, Chan, Bind, P }) ->
     PProc = build_process(Name, P),
     fun (Env, Geom) ->
 	    Loc = geom:random_translate(Geom, ?DEFAULT_DIFFUSE_RATE),
+	    update_location(self(), Loc),
 	    CPid = get_channel(Chan, Env),
 	    CPid ! { recv, Name, self(), Loc },
 	    io:format("Process ~p waiting to recv message on chan ~p.~n",
@@ -66,9 +78,10 @@ build_process(Name, { spawn, Ps, Q }) ->
     PProc = build_process(Name, Q),
     fun (Env, Geom) ->
 	    Loc = geom:random_translate(Geom, ?DEFAULT_DIFFUSE_RATE),
+	    update_location(self(), Loc),
 	    Procs = [lookup(P, Env) || P <- Ps],
-	    [spawn(?MODULE, eval, [Proc, Env]) || { _, Proc } <- Procs],
-	    [whereis(simul) ! { create } || _P <- Ps],
+	    Spawns = [spawn(?MODULE, eval, [Proc, Env]) || { _, Proc } <- Procs],
+	    [whereis(simul) ! { create, Pid, Loc } || Pid <- Spawns],
 	    io:format("Process ~p spawn'd processes ~p.~n", [Name, Ps]),
 	    PProc(Env, Loc)
     end;
@@ -76,6 +89,7 @@ build_process(Name, { move, P }) ->
     PProc = build_process(Name, P),
     fun (Env, Geom) ->
 	    Loc = geom:random_translate(Geom, ?DEFAULT_MOVE_LIMIT),
+	    update_location(self(), Loc),
 	    PProc(Env, Loc)
     end;
 build_process(Name, { choice, Ps }) ->
