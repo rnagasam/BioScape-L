@@ -4,7 +4,7 @@
 prog1() ->
     [prog, [a],					% channels
 
-     [{define, p, geomP, 			% definitions
+     [{define, p, geomP,			% definitions
        {move,
 	{send, a, this,
 	 {null}}}},
@@ -70,3 +70,39 @@ prog5() ->
 	       ]}}],
 
      [{procA, 100}]].
+
+prog6() ->
+    [prog, [a, b],
+
+     [{define, procA, geomA,
+       {choice, [
+		{send, a, "ack", {null}},
+		{send, b, "ack", {null}}
+		]}},
+
+      {define, procB, geomB,
+       {recv, b, ack, {null}}},
+
+      {define, procC, geomC,
+       {recv, a, ack, {null}}},
+
+      {define, procD, geomD,
+       {choice, [
+		{send, a, "ack", {null}},
+		{send, b, "ack", {null}}
+		]}}],
+
+     [{procA, 1}, {procB, 1}, {procC, 1}, {procD, 1}]].
+
+prog7() ->
+    [prog, [a],
+
+     [{define, procA, geomA,
+       {spawn, [procB], {null}}},
+
+      {define, procB, geomB,
+       {send, a, "ack",
+	{recv, a, ack,
+	 {null}}}}],
+
+    [{procA, 1}]].
