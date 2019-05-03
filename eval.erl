@@ -1,11 +1,12 @@
 -module(eval).
--export([lookup/2, build_process/2, eval/3]).
+-export([lookup/2, build_process/2, eval/3, spawn_to_loc/2]).
 -define(DEFAULT_MOVE_LIMIT, 2).
 -define(DEFAULT_DIFFUSE_RATE, 0.5).
 
 eval(P, Env, Geom) ->
     PGeom = case Geom of
 		origin -> geom:default();
+		{geom,_Pos,_Radius} -> Geom;
 		_ -> geom:from_tuple(Geom)
 	    end,
     P(Env, PGeom).
@@ -29,6 +30,14 @@ get_channel(Chan, Env) ->
 	{ _Type, Ent } when is_pid(Ent) ->
 	    Ent;
 	Else -> error({not_a_channel, Else})
+    end.
+
+spawn_to_loc(Loc, SpawnTo) ->
+    case SpawnTo of
+	this ->
+	    Loc;
+	_ ->
+	    geom:add_pos(Loc, geom:from_tuple(SpawnTo))
     end.
 
 build_process(Name, { null }) ->
@@ -78,9 +87,11 @@ build_process(Name, { spawn, Ps, Q }) ->
     fun (Env, Geom) ->
 	    Loc = geom:random_translate(Geom, ?DEFAULT_DIFFUSE_RATE),
 	    update_location(self(), Loc),
-	    Procs = [lookup(P, Env) || P <- Ps],
-	    Spawns = [spawn(?MODULE, eval, [Proc, Env, PGeom])
-		      || { _, {Proc, PGeom} } <- Procs],
+	    Procs = [{ lookup(P, Env), SpawnTo } || { P, SpawnTo } <- Ps],
+	    Spawns = [spawn(?MODULE, eval, [Proc, Env, spawn_to_loc(Loc, SLoc)])
+		      || { {_, { Proc, _PGeom } }, SLoc } <- Procs],
+	    %% TODO update with actual location of spawn'd process
+	    %% (using move_loc)
 	    [whereis(simul) ! { create, Pid, Loc } || Pid <- Spawns],
 	    io:format("Process ~p spawn'd processes ~p.~n", [Name, Ps]),
 	    PProc(Env, Loc)

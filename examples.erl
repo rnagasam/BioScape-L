@@ -24,11 +24,11 @@ prog2() ->
 
       {define, procB, origin,
        {recv, a, ack,
-	{spawn, [procC],
+	{spawn, [{procC, this}],
 	 {null}}}},
 
       {define, procC, origin,
-       {spawn, [procA, procB],
+       {spawn, [{procA, this}, {procB, this}],
 	{null}}}],
 
      [{procA, 1}, {procB, 1}]].
@@ -98,7 +98,7 @@ prog7() ->
     [prog, [{a, 1}],
 
      [{define, procA, origin,
-       {spawn, [procB], {null}}},
+       {spawn, [{procB, this}], {null}}},
 
       {define, procB, origin,
        {send, a, "ack",
