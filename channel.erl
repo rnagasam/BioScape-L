@@ -1,5 +1,5 @@
 -module(channel).
--export([build_channels/1, channel/3]).
+-export([build_channels/1, channel/4]).
 
 pick_random([]) ->
     error({pick_random, "No elements to pick from"});
@@ -9,12 +9,11 @@ pick_random(Ls) ->
 
 build_channels([]) ->
     [];
-build_channels([C|Cs]) ->
-    CPid = spawn(?MODULE, channel, [C, [], queue:new()]),
+build_channels([{C, Radius}|Cs]) ->
+    CPid = spawn(?MODULE, channel, [C, [], queue:new(), Radius]),
     [{ C, CPid } | build_channels(Cs)].
 
-
-channel(Name, Listeners, MsgBox) ->
+channel(Name, Listeners, MsgBox, _Radius) ->
     receive
 	{ send, ProcName, ProcPid, Msg, _Location } ->
 	    case Listeners of
