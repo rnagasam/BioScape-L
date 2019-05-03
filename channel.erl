@@ -19,23 +19,23 @@ channel(Name, Listeners, MsgBox, _Radius) ->
 	    case Listeners of
 		[] ->
 		    Msgs = queue:in({ ProcPid, ProcName, Msg }, MsgBox),
-		    channel(Name, Listeners, Msgs);
+		    channel(Name, Listeners, Msgs, _Radius);
 		_ ->
 		    { Q, QPid } = pick_random(Listeners),
 		    QPid    ! { self(), ProcName, Msg },
 		    ProcPid ! { msg_sent },
 		    Ls = lists:delete({ Q, QPid }, Listeners),
-		    channel(Name, Ls, MsgBox)
+		    channel(Name, Ls, MsgBox, _Radius)
 	    end;
 	{ recv, ProcName, ProcPid, _Location } ->
 	    case queue:is_empty(MsgBox) of
 		true ->
 		    Ls = [{ ProcName, ProcPid } | Listeners],
-		    channel(Name, Ls, MsgBox);
+		    channel(Name, Ls, MsgBox, _Radius);
 		false -> % TODO: Make random choice, don't send to latest recv'r.
 		    {{ value, { QPid, QName, Msg }}, Q } = queue:out(MsgBox),
 		    ProcPid ! { self(), QName, Msg },
 		    QPid    ! { msg_sent },
-		    channel(Name, Listeners, Q)
+		    channel(Name, Listeners, Q, _Radius)
 	    end
     end.
