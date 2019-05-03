@@ -1,6 +1,5 @@
 -module(channel).
 -export([build_channels/1, channel/4]).
--define(DEFAULT_RADIUS, 1).
 
 pick_random([]) ->
     error({pick_random, "No elements to pick from"});
@@ -10,8 +9,8 @@ pick_random(Ls) ->
 
 build_channels([]) ->
     [];
-build_channels([C|Cs]) ->
-    CPid = spawn(?MODULE, channel, [C, [], queue:new(), ?DEFAULT_RADIUS]),
+build_channels([{C, Radius}|Cs]) ->
+    CPid = spawn(?MODULE, channel, [C, [], queue:new(), Radius]),
     [{ C, CPid } | build_channels(Cs)].
 
 get_location(Proc) ->

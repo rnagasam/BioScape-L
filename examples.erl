@@ -2,7 +2,7 @@
 -compile(export_all).
 
 prog1() ->
-    [prog, [a],					% channels
+    [prog, [{a, 1}],				% channels
 
      [{define, p, geomP,			% definitions
        {move,
@@ -16,7 +16,7 @@ prog1() ->
      [{p, 1}, {q, 1}]].				% run commands
 
 prog2() ->
-    [prog, [a],
+    [prog, [{a, 1}],
 
      [{define, procA, geomA,
        {send, a, "ack",
@@ -35,7 +35,7 @@ prog2() ->
 
 
 prog3() ->
-    [prog, [a],
+    [prog, [{a, 1}],
 
      [{define, procA, geomA,
        {send, a, "ack",
@@ -48,7 +48,7 @@ prog3() ->
      [{procA, 1}, {procB, 1}]].
 
 prog4() ->
-    [prog, [a],
+    [prog, [{a, 1}],
 
      [{define, procA, geomA,
        {send, a, a,
@@ -61,7 +61,7 @@ prog4() ->
      [{procA, 1}, {procB, 1}]].
 
 prog5() ->
-    [prog, [a],
+    [prog, [{a, 1}],
 
      [{define, procA, geomA,
        {choice, [
@@ -72,7 +72,7 @@ prog5() ->
      [{procA, 100}]].
 
 prog6() ->
-    [prog, [a, b],
+    [prog, [{a, 1}, {b, 1}],
 
      [{define, procA, geomA,
        {choice, [
@@ -95,7 +95,7 @@ prog6() ->
      [{procA, 1}, {procB, 1}, {procC, 1}, {procD, 1}]].
 
 prog7() ->
-    [prog, [a],
+    [prog, [{a, 1}],
 
      [{define, procA, geomA,
        {spawn, [procB], {null}}},
