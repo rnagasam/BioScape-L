@@ -1,5 +1,6 @@
 -module(simul).
 -export([simul/3]).
+-define(TIMEOUT, 5000).
 
 % For now, `simul' is used to cleanup channels after finishing a run.
 % `simul' additionally maintains a dictionary of process info objects,
@@ -8,6 +9,7 @@
 % location information.
 simul(Chans, 0, ProcsInfo) ->
     io:format("Simul: ~p~n", [dict:to_list(ProcsInfo)]),
+    dict:map(fun (Pid, _) -> exit(Pid, kill) end, ProcsInfo),
     [exit(C, kill) || { _, C } <- Chans];
 simul(Chans, N, ProcsInfo) ->
     receive
@@ -27,4 +29,7 @@ simul(Chans, N, ProcsInfo) ->
 	    io:format("Simul: N: ~p, ProcsInfo: ~p~n",
 		      [N, dict:to_list(ProcsInfo)]),
 	    simul(Chans, N, ProcsInfo)
+    after ?TIMEOUT ->
+	    io:format("Simul: exit"),
+	    simul(Chans, 0, ProcsInfo)
     end.
