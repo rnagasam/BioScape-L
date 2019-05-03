@@ -92,7 +92,7 @@ prog6() ->
 		{send, b, "ack", {null}}
 		]}}],
 
-     [{procA, 1}, {procB, 1}, {procC, 1}, {procD, 1}]].
+     [{procA, 100}, {procB, 100}, {procC, 100}, {procD, 100}]].
 
 prog7() ->
     [prog, [{a, 1}],

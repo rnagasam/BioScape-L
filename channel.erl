@@ -11,15 +11,15 @@ build_channels([]) ->
     [];
 build_channels([{C, Radius}|Cs]) ->
     CPid = spawn(?MODULE, channel, [C, [], queue:new(), Radius]),
-    [{ C, CPid } | build_channels(Cs)].
+    [{C, CPid} | build_channels(Cs)].
 
 get_location(Proc) ->
     case whereis(simul) of
 	undefined -> error({no_simulation_running});
-	SPid -> SPid ! { get_location, Proc, self() }
+	SPid -> SPid ! {get_location, Proc, self()}
     end,
     receive
-	{ ok, Loc } -> Loc;
+	{ok, Loc} -> Loc;
 	error -> error({location_not_found, Proc})
     end.
 
@@ -30,32 +30,32 @@ can_react(P, Q, Radius) ->
 
 channel(Name, Listeners, MsgBox, Radius) ->
     receive
-	{ send, SName, SPid, Msg } ->
+	{send, SName, SPid, Msg} ->
 	    case Listeners of
 		[] ->
-		    Msgs = queue:in({ SPid, SName, Msg }, MsgBox),
+		    Msgs = queue:in({SPid, SName, Msg}, MsgBox),
 		    channel(Name, Listeners, Msgs, Radius);
 		_ ->
-		    { R, RPid } = pick_random(Listeners),
+		    {R, RPid} = pick_random(Listeners),
 		    case can_react(SPid, RPid, Radius) of
-			true -> RPid ! { self(), SName, Msg },
-				SPid ! { msg_sent },
-				Ls = lists:delete({ R, RPid }, Listeners);
+			true -> RPid ! {self(), SName, Msg},
+				SPid ! {msg_sent},
+				Ls = lists:delete({R, RPid}, Listeners);
 			_ -> io:format("Channel: msg from ~p dropped~n", [SPid]),
 			     Ls = Listeners
 		    end,
 		    channel(Name, Ls, MsgBox, Radius)
 	    end;
-	{ recv, RName, RPid } ->
+	{recv, RName, RPid} ->
 	    case queue:is_empty(MsgBox) of
 		true ->
-		    Ls = [{ RName, RPid } | Listeners],
+		    Ls = [{RName, RPid} | Listeners],
 		    channel(Name, Ls, MsgBox, Radius);
 		_ -> % TODO: Make random choice, don't send to latest recv'r.
-		    {{ value, { SPid, SName, Msg }}, Q } = queue:out(MsgBox),
+		    {{value, {SPid, SName, Msg}}, Q} = queue:out(MsgBox),
 		    case can_react(SPid, RPid, Radius) of
-			true -> RPid ! { self(), SName, Msg },
-				SPid ! { msg_sent };
+			true -> RPid ! {self(), SName, Msg},
+				SPid ! {msg_sent};
 			_ -> io:format("Channel: msg from ~p dropped~n", [SPid])
 		    end,
 		    channel(Name, Listeners, Q, Radius)
