@@ -45,11 +45,11 @@ build_process(Name, { send, Chan, Msg, P }) ->
 	    update_location(self(), Loc),
 	    CPid = get_channel(Chan, Env),
 	    case Msg of
-		this -> CPid ! { send, Name, self(), none, Loc };
+		this -> CPid ! { send, Name, self(), Loc };
 		_ when is_atom(Msg) ->
 		    { _, Val } = lookup(Msg, Env),
-		    CPid ! { send, Name, self(), Val, Loc };
-		_ -> CPid ! { send, Name, self(), Msg, Loc }
+		    CPid ! { send, Name, self(), Val };
+		_ -> CPid ! { send, Name, self(), Msg }
 	    end,
 	    io:format("Process ~p sent message ~p on chan ~p.~n",
 		      [Name, Msg, Chan]),
@@ -64,7 +64,7 @@ build_process(Name, { recv, Chan, Bind, P }) ->
 	    Loc = geom:random_translate(Geom, ?DEFAULT_DIFFUSE_RATE),
 	    update_location(self(), Loc),
 	    CPid = get_channel(Chan, Env),
-	    CPid ! { recv, Name, self(), Loc },
+	    CPid ! { recv, Name, self() },
 	    io:format("Process ~p waiting to recv message on chan ~p.~n",
 		      [Name, Chan]),
 	    receive

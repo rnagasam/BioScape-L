@@ -20,9 +20,8 @@ simul(Chans, N, ProcsInfo) ->
 	{ update, ProcPid, Location } ->
 	    simul(Chans, N, dict:store(ProcPid, Location, ProcsInfo));
 	{ get_location, ProcPid, From } ->
-	    ProcLoc = dict:find(ProcPid, ProcsInfo),
 	    % `channel' should check for failure in recv'd message
-	    From ! { location, ProcLoc },
+	    From ! dict:find(ProcPid, ProcsInfo),
 	    simul(Chans, N, ProcsInfo);
 	{ inspect_state } ->
 	    io:format("Simul: N: ~p, ProcsInfo: ~p~n",
