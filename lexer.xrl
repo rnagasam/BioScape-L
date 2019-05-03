@@ -14,12 +14,21 @@ Null = null
 
 Define = define
 
+Send = send
+
+Recv = recv
+
+New = new
+
 Rules.
 
 {Num} :
   {token,{num,TokenLine,list_to_integer(TokenChars)}}.
 
 {WhiteSpace} : skip_token.
+
+%% {Name} :
+%%   {token,{name,TokenLine,list_to_atom(TokenChars)}}.
 
 {Name} :
   {token,{name,TokenLine,list_to_atom(TokenChars)}}.
@@ -30,8 +39,17 @@ Rules.
 {Define} :
   {token,{'define',TokenLine,TokenChars}}.
 
+{Send} :
+  {token,{'send',TokenLine,TokenChars}}.
+
+{Recv} :
+  {token,{'recv',TokenLine,TokenChars}}.
+
 {Null} :
   {token,{null,TokenLine,TokenChars}}.
+
+{New} :
+  {token,{'new',TokenLine,TokenChars}}.
 
 {Id} :
   {token,{id,TokenLine,list_to_atom(TokenChars)}}.
@@ -56,6 +74,9 @@ Rules.
 
 \. :
   {token,{dot,TokenLine,TokenChars}}.
+
+\; :
+  {token,{semicolon,TokenLine,TokenChars}}.
 
 
 Erlang code.
