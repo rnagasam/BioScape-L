@@ -1,15 +1,14 @@
 -module(eval).
--export([lookup/2, build_process/2, eval/2]).
+-export([lookup/2, build_process/2, eval/3]).
 -define(DEFAULT_MOVE_LIMIT, 2).
 -define(DEFAULT_DIFFUSE_RATE, 0.5).
 
-eval(P, Env) ->
-    InitGeom = geom:default(),
-    case whereis(simul) of
-	undefined -> error({no_simulation_running});
-	SPid -> SPid ! { update, self(), InitGeom }
-    end,
-    P(Env, InitGeom).
+eval(P, Env, Geom) ->
+    PGeom = case Geom of
+		origin -> geom:default();
+		_ -> geom:from_tuple(Geom)
+	    end,
+    P(Env, PGeom).
 
 update_location(Pid, Loc) ->
     case whereis(simul) of
@@ -80,7 +79,8 @@ build_process(Name, { spawn, Ps, Q }) ->
 	    Loc = geom:random_translate(Geom, ?DEFAULT_DIFFUSE_RATE),
 	    update_location(self(), Loc),
 	    Procs = [lookup(P, Env) || P <- Ps],
-	    Spawns = [spawn(?MODULE, eval, [Proc, Env]) || { _, Proc } <- Procs],
+	    Spawns = [spawn(?MODULE, eval, [Proc, Env, PGeom])
+		      || { _, {Proc, PGeom} } <- Procs],
 	    [whereis(simul) ! { create, Pid, Loc } || Pid <- Spawns],
 	    io:format("Process ~p spawn'd processes ~p.~n", [Name, Ps]),
 	    PProc(Env, Loc)

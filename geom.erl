@@ -39,3 +39,6 @@ distance(G1, G2) ->
 
 within(G1, G2, Radius) ->
     distance(G1, G2) =< Radius.
+
+from_tuple({X, Y, Radius}) ->
+    #geom{ pos = #pos{ x = X, y = Y }, radius = Radius }.
