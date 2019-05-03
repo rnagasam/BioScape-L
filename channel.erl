@@ -24,35 +24,41 @@ get_location(Proc) ->
 	error -> error({location_not_found, Proc})
     end.
 
+can_react(P, Q, Radius) ->
+    PLoc = get_location(P),
+    QLoc = get_location(Q),
+    geom:within(PLoc, QLoc, Radius).
+
 channel(Name, Listeners, MsgBox, Radius) ->
     receive
-	{ send, ProcName, ProcPid, Msg } ->
+	{ send, SName, SPid, Msg } ->
 	    case Listeners of
 		[] ->
-		    Msgs = queue:in({ ProcPid, ProcName, Msg }, MsgBox),
+		    Msgs = queue:in({ SPid, SName, Msg }, MsgBox),
 		    channel(Name, Listeners, Msgs, Radius);
 		_ ->
-		    % Get current sender location
-		    SenderLoc = get_location(ProcPid),
-		    { Q, QPid } = pick_random(Listeners),
-		    QLoc = get_location(QPid),
-		    io:format("Channel: Location of ~p: ~p~n", [Q, QLoc]),
-		    QPid    ! { self(), ProcName, Msg },
-		    ProcPid ! { msg_sent },
-		    Ls = lists:delete({ Q, QPid }, Listeners),
+		    { R, RPid } = pick_random(Listeners),
+		    case can_react(SPid, RPid, Radius) of
+			true -> RPid ! { self(), SName, Msg },
+				SPid ! { msg_sent },
+				Ls = lists:delete({ R, RPid }, Listeners);
+			_ -> io:format("Channel: msg from ~p dropped~n", [SPid]),
+			     Ls = Listeners
+		    end,
 		    channel(Name, Ls, MsgBox, Radius)
 	    end;
-	{ recv, ProcName, ProcPid } ->
+	{ recv, RName, RPid } ->
 	    case queue:is_empty(MsgBox) of
 		true ->
-		    Ls = [{ ProcName, ProcPid } | Listeners],
+		    Ls = [{ RName, RPid } | Listeners],
 		    channel(Name, Ls, MsgBox, Radius);
 		_ -> % TODO: Make random choice, don't send to latest recv'r.
-		    {{ value, { QPid, QName, Msg }}, Q } = queue:out(MsgBox),
-		    ProcPid ! { self(), QName, Msg },
-		    SenderLoc = get_location(QPid),
-		    ProcLoc = get_location(ProcPid),
-		    QPid    ! { msg_sent },
+		    {{ value, { SPid, SName, Msg }}, Q } = queue:out(MsgBox),
+		    case can_react(SPid, RPid, Radius) of
+			true -> RPid ! { self(), SName, Msg },
+				SPid ! { msg_sent };
+			_ -> io:format("Channel: msg from ~p dropped~n", [SPid])
+		    end,
 		    channel(Name, Listeners, Q, Radius)
 	    end
     end.
