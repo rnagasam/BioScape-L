@@ -1,11 +1,14 @@
 -module(eval).
--export([lookup/2, build_process/2, eval/2]).
+-export([lookup/2, build_process/2, eval/3]).
 -define(DEFAULT_MOVE_LIMIT, 2).
 -define(DEFAULT_DIFFUSE_RATE, 0.5).
 
-eval(P, Env) ->
-    InitGeom = geom:default(),
-    P(Env, InitGeom).
+eval(P, Env, Geom) ->
+    PGeom = case Geom of
+		origin -> geom:default();
+		_ -> geom:from_tuple(Geom)
+	    end,
+    P(Env, PGeom).
 
 lookup(Key, Env) ->
     case lists:keyfind(Key, 2, Env) of
@@ -67,7 +70,8 @@ build_process(Name, { spawn, Ps, Q }) ->
     fun (Env, Geom) ->
 	    Loc = geom:random_translate(Geom, ?DEFAULT_DIFFUSE_RATE),
 	    Procs = [lookup(P, Env) || P <- Ps],
-	    [spawn(?MODULE, eval, [Proc, Env]) || { _, Proc } <- Procs],
+	    [spawn(?MODULE, eval, [Proc, Env, PGeom])
+	     || { _, {Proc, PGeom} } <- Procs],
 	    [whereis(simul) ! { create } || _P <- Ps],
 	    io:format("Process ~p spawn'd processes ~p.~n", [Name, Ps]),
 	    PProc(Env, Loc)

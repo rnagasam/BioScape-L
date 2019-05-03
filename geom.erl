@@ -28,7 +28,7 @@ random_translate(Geom, Max) ->
     RandX = rand:uniform() * Max - (Max/2),
     RandY = rand:uniform() * Max - (Max/2),
     translate(Geom, RandX, RandY).
-    
+
 scale(Geom, R) ->
     Geom#geom{ pos = Geom#geom.pos, radius = Geom#geom.radius * R }.
 
@@ -36,3 +36,6 @@ distance(G1, G2) ->
     Dx = G2#geom.pos#pos.x - G1#geom.pos#pos.x,
     Dy = G2#geom.pos#pos.y - G1#geom.pos#pos.y,
     math:sqrt(math:pow(Dx, 2) + math:pow(Dy, 2)).
+
+from_tuple({X, Y, Radius}) ->
+    #geom{ pos = #pos{ x = X, y = Y }, radius = Radius }.

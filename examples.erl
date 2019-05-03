@@ -4,12 +4,12 @@
 prog1() ->
     [prog, [{a, 1}],				% channels
 
-     [{define, p, geomP,			% definitions
+     [{define, p, origin,			% definitions
        {move,
 	{send, a, this,
 	 {null}}}},
 
-      {define, q, geomQ,
+      {define, q, origin,
        {recv, a, x,
 	{null}}}],
 
@@ -18,16 +18,16 @@ prog1() ->
 prog2() ->
     [prog, [{a, 1}],
 
-     [{define, procA, geomA,
+     [{define, procA, origin,
        {send, a, "ack",
 	{null}}},
 
-      {define, procB, geomB,
+      {define, procB, origin,
        {recv, a, ack,
 	{spawn, [procC],
 	 {null}}}},
 
-      {define, procC, geomC,
+      {define, procC, origin,
        {spawn, [procA, procB],
 	{null}}}],
 
@@ -37,12 +37,12 @@ prog2() ->
 prog3() ->
     [prog, [{a, 1}],
 
-     [{define, procA, geomA,
+     [{define, procA, origin,
        {send, a, "ack",
 	{recv, a, ack,
 	 {null}}}},
 
-      {define, procB, geomB,
+      {define, procB, origin,
        {recv, a, ack, {null}}}],
 
      [{procA, 1}, {procB, 1}]].
@@ -50,11 +50,11 @@ prog3() ->
 prog4() ->
     [prog, [{a, 1}],
 
-     [{define, procA, geomA,
+     [{define, procA, origin,
        {send, a, a,
 	{recv, a, ack, {null}}}},
 
-      {define, procB, geomB,
+      {define, procB, origin,
        {recv, a, x,
 	{send, x, "ack", {null}}}}],
 
@@ -63,7 +63,7 @@ prog4() ->
 prog5() ->
     [prog, [{a, 1}],
 
-     [{define, procA, geomA,
+     [{define, procA, origin,
        {choice, [
 		 {send, a, "ack", {null}},
 		 {recv, a, "ack", {null}}
@@ -74,19 +74,19 @@ prog5() ->
 prog6() ->
     [prog, [{a, 1}, {b, 1}],
 
-     [{define, procA, geomA,
+     [{define, procA, origin,
        {choice, [
 		{send, a, "ack", {null}},
 		{send, b, "ack", {null}}
 		]}},
 
-      {define, procB, geomB,
+      {define, procB, origin,
        {recv, b, ack, {null}}},
 
-      {define, procC, geomC,
+      {define, procC, origin,
        {recv, a, ack, {null}}},
 
-      {define, procD, geomD,
+      {define, procD, origin,
        {choice, [
 		{send, a, "ack", {null}},
 		{send, b, "ack", {null}}
@@ -97,10 +97,10 @@ prog6() ->
 prog7() ->
     [prog, [{a, 1}],
 
-     [{define, procA, geomA,
+     [{define, procA, origin,
        {spawn, [procB], {null}}},
 
-      {define, procB, geomB,
+      {define, procB, origin,
        {send, a, "ack",
 	{recv, a, ack,
 	 {null}}}}],
