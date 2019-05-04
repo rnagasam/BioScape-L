@@ -11,7 +11,8 @@ run([prog, ChanDefs, ProcDefs, RunCmds]) ->
     ProcsEnv = [{proc, P, {Proc, PGeom}} || {P, Proc, PGeom} <- Procs],
     Simul = spawn(simul, simul, [Chans, NProcs, dict:new(), "/tmp/bioscape.out"]),
     register(simul, Simul),
-    [spawn_entity(P, N, ChansEnv ++ ProcsEnv) || {P, N} <- RunCmds].
+    [spawn_entity(P, N, ChansEnv ++ ProcsEnv) || {P, N} <- RunCmds],
+    ok.
 
 spawn_entity(P, N, InitEnv) ->
     case lists:keyfind(P, 2, InitEnv) of

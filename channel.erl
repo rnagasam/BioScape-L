@@ -54,7 +54,8 @@ channel(Name, Listeners, MsgBox, Radius) ->
 		    {{value, {SPid, SName, Msg}}, Q} = queue:out(MsgBox),
 		    case can_react(SPid, RPid, Radius) of
 			true -> RPid ! {self(), SName, Msg},
-				SPid ! {msg_sent}
+				SPid ! {msg_sent};
+			_ -> ok
 		    end,
 		    channel(Name, Listeners, Q, Radius)
 	    end

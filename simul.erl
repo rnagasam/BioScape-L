@@ -1,10 +1,12 @@
 -module(simul).
 -export([simul/4, write_state/2, geom_to_string/1]).
 -define(TIMEOUT, 5000).
+-define(STEP_SIZE, 5).
 
 simul(Chans, N, ProcsInfo, FilePath) ->
     {ok, Handle} = file:open(FilePath, [write]),
-    Writer = spawn(?MODULE, write_state, [Handle, 5]),
+    io:format(Handle, "~B~n", [?STEP_SIZE]),
+    Writer = spawn(?MODULE, write_state, [Handle, ?STEP_SIZE]),
     simul(Chans, N, ProcsInfo, 0, Writer).
 
 simul(Chans, 0, ProcsInfo, Time, Writer) ->
@@ -52,8 +54,8 @@ write_state(File, Step) ->
 write_infos(File, Time, ProcsInfo) ->
     io:format(File, "~B~n", [Time]),
     dict:map(fun(_K, {Name, Geom}) ->
-		     io:format(File, "\t~w ~s~n", [Name, geom_to_string(Geom)])
+		     io:format(File, "\t~w\t~s~n", [Name, geom_to_string(Geom)])
 	     end, ProcsInfo).
 
 geom_to_string({geom, {pos, X, Y}, Rad}) ->
-    io_lib:fwrite("~10.2f, ~10.2f, ~10.1f", [X, Y, Rad]).
+    io_lib:fwrite("~10.2f\t~10.2f\t~10.1f", [X, Y, Rad]).
