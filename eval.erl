@@ -41,10 +41,8 @@ spawn_to_loc(Loc, SpawnTo) ->
     end.
 
 build_process(Name, {null}) ->
-    fun (_Env, Geom) ->
-	    whereis(simul) ! {done, Name, self()},
-	    io:format("Process ~p terminated at ~p.~n",
-		      [Name, geom:get_pos(Geom)])
+    fun (_Env, _Geom) ->
+	    whereis(simul) ! {done, Name, self()}
     end;
 build_process(Name, {send, Chan, Msg, P}) ->
     PProc = build_process(Name, P),
@@ -59,8 +57,6 @@ build_process(Name, {send, Chan, Msg, P}) ->
 		    CPid ! {send, Name, self(), Val};
 		_ -> CPid ! {send, Name, self(), Msg}
 	    end,
-	    io:format("Process ~p sent message ~p on chan ~p.~n",
-		      [Name, Msg, Chan]),
 	    receive
 		{msg_sent} ->
 		    PProc(Env, Loc)
@@ -73,12 +69,8 @@ build_process(Name, {recv, Chan, Bind, P}) ->
 	    update_location(Name, self(), Loc),
 	    CPid = get_channel(Chan, Env),
 	    CPid ! {recv, Name, self()},
-	    io:format("Process ~p waiting to recv message on chan ~p.~n",
-		      [Name, Chan]),
 	    receive
 		{CPid, _ProcName, Msg} ->
-		    io:format("Process ~p recv'd message ~p on chan ~p.~n",
-			      [Name, Msg, Chan]),
 		    PProc([{var, Bind, Msg} | Env], Loc)
 	    end
     end;
@@ -93,7 +85,6 @@ build_process(Name, {spawn, Ps, Q}) ->
 	    %% TODO update with actual location of spawn'd process
 	    %% (using move_loc)
 	    [whereis(simul) ! {create, PNam, Pid, Loc} || {PNam, Pid} <- Ents],
-	    io:format("Process ~p spawn'd processes ~p.~n", [Name, Ps]),
 	    PProc(Env, Loc)
     end;
 build_process(Name, {move, P}) ->
@@ -106,6 +97,5 @@ build_process(Name, {move, P}) ->
 build_process(Name, {choice, Ps}) ->
     fun (Env, Geom) ->
 	    Route = lists:nth(rand:uniform(length(Ps)), Ps),
-	    io:format("Chose: ~p~n", [Route]),
 	    (build_process(Name, Route))(Env, Geom)
     end.
