@@ -37,13 +37,12 @@ channel(Name, Listeners, MsgBox, Radius) ->
 		    channel(Name, Listeners, Msgs, Radius);
 		_ ->
 		    {R, RPid} = pick_random(Listeners),
-		    case can_react(SPid, RPid, Radius) of
-			true -> RPid ! {self(), SName, Msg},
-				SPid ! {msg_sent},
-				Ls = lists:delete({R, RPid}, Listeners);
-			_ -> io:format("Channel: msg from ~p dropped~n", [SPid]),
-			     Ls = Listeners
-		    end,
+		    Ls = case can_react(SPid, RPid, Radius) of
+			     true -> RPid ! {self(), SName, Msg},
+				     SPid ! {msg_sent},
+				     lists:delete({R, RPid}, Listeners);
+			     _ -> Listeners
+			 end,
 		    channel(Name, Ls, MsgBox, Radius)
 	    end;
 	{recv, RName, RPid} ->
@@ -55,8 +54,7 @@ channel(Name, Listeners, MsgBox, Radius) ->
 		    {{value, {SPid, SName, Msg}}, Q} = queue:out(MsgBox),
 		    case can_react(SPid, RPid, Radius) of
 			true -> RPid ! {self(), SName, Msg},
-				SPid ! {msg_sent};
-			_ -> io:format("Channel: msg from ~p dropped~n", [SPid])
+				SPid ! {msg_sent}
 		    end,
 		    channel(Name, Listeners, Q, Radius)
 	    end

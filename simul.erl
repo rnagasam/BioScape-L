@@ -1,13 +1,14 @@
 -module(simul).
--export([simul/3, write_state/1]).
+-export([simul/4, write_state/2, geom_to_string/1]).
 -define(TIMEOUT, 5000).
 
-simul(Chans, N, ProcsInfo) ->
-    Writer = spawn(?MODULE, write_state, [5]),
+simul(Chans, N, ProcsInfo, FilePath) ->
+    {ok, Handle} = file:open(FilePath, [write]),
+    Writer = spawn(?MODULE, write_state, [Handle, 5]),
     simul(Chans, N, ProcsInfo, 0, Writer).
 
 simul(Chans, 0, ProcsInfo, Time, Writer) ->
-    Writer ! {Time, ProcsInfo, final},
+    Writer ! {done},
     io:format("Simulation: ran for ~p time steps~n", [Time]),
     dict:map(fun (Pid, _) -> exit(Pid, kill) end, ProcsInfo),
     [exit(C, kill) || {_, C} <- Chans];
@@ -28,23 +29,31 @@ simul(Chans, N, ProcsInfo, Time, Writer) ->
 	{get_location, ProcPid, From} ->
 	    % `channel' should check for failure in recv'd message
 	    From ! dict:find(ProcPid, ProcsInfo),
-	    simul(Chans, N, ProcsInfo, Time+1, Writer);
+	    simul(Chans, N, ProcsInfo, Time, Writer);
 	{inspect_state} ->
 	    io:format("Simul: N: ~p, ProcsInfo: ~p~n",
 		      [N, dict:to_list(ProcsInfo)]),
 	    simul(Chans, N, ProcsInfo, Time, Writer)
     after ?TIMEOUT ->
-	    io:format("Simul: exit"),
 	    simul(Chans, 0, ProcsInfo, Time, Writer)
     end.
 
-write_state(Step) ->
+write_state(File, Step) ->
     receive
-	{Time, Info, final} -> % final state of all entities
-	    io:format("State: ~p~n", [[V || {_K, V} <- dict:to_list(Info)]]);
+	{done} ->
+	    file:close(File);
 	{Time, Info} when Time rem Step =:= 0 ->
-	    io:format("State: ~p~n", [[V || {_K, V} <- dict:to_list(Info)]]),
-	    write_state(Step);
+	    write_infos(File, Time, Info),
+	    write_state(File, Step);
 	{_Time, _Info} ->
-	    write_state(Step)
+	    write_state(File, Step)
     end.
+
+write_infos(File, Time, ProcsInfo) ->
+    io:format(File, "~B~n", [Time]),
+    dict:map(fun(_K, {Name, Geom}) ->
+		     io:format(File, "\t~w ~s~n", [Name, geom_to_string(Geom)])
+	     end, ProcsInfo).
+
+geom_to_string({geom, {pos, X, Y}, Rad}) ->
+    io_lib:fwrite("~10.2f, ~10.2f, ~10.1f", [X, Y, Rad]).
