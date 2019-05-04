@@ -19,7 +19,7 @@ get_location(Proc) ->
 	SPid -> SPid ! {get_location, Proc, self()}
     end,
     receive
-	{ok, Loc} -> Loc;
+	{ok, {_Name, Loc}} -> Loc;
 	error -> error({location_not_found, Proc})
     end.
 

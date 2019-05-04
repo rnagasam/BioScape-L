@@ -14,11 +14,14 @@ simul(Chans, N, ProcsInfo, Time) ->
     receive
 	{done, _Name, ProcPid} ->
 	    io:format("Simul: ~p is done.~n", [ProcPid]),
-	    simul(Chans, N-1, dict:erase(ProcPid, ProcsInfo), Time+1);
-	{create, _Name, ProcPid, Location} ->
-	    simul(Chans, N+1, dict:store(ProcPid, Location, ProcsInfo), Time+1);
-	{update, _Name, ProcPid, Location} ->
-	    simul(Chans, N, dict:store(ProcPid, Location, ProcsInfo), Time+1);
+	    Info = dict:erase(ProcPid, ProcsInfo),
+	    simul(Chans, N-1, Info, Time+1);
+	{create, Name, ProcPid, Location} ->
+	    Info = dict:store(ProcPid, {Name, Location}, ProcsInfo),
+	    simul(Chans, N+1, Info, Time+1);
+	{update, Name, ProcPid, Location} ->
+	    Info = dict:store(ProcPid, {Name, Location}, ProcsInfo),
+	    simul(Chans, N, Info, Time+1);
 	{get_location, ProcPid, From} ->
 	    % `channel' should check for failure in recv'd message
 	    From ! dict:find(ProcPid, ProcsInfo),
