@@ -1,15 +1,22 @@
 -module(eval).
--export([lookup/2, build_process/2, eval/3]).
--define(DEFAULT_MOVE_LIMIT, 2).
--define(DEFAULT_DIFFUSE_RATE, 0.5).
+-export([lookup/2, build_process/2, eval/4]).
+-define(DEFAULT_MOVE_LIMIT, 50).
+-define(DEFAULT_DIFFUSE_RATE, 50).
 
-eval(P, Env, Geom) ->
+eval(Name, P, Env, Geom) ->
     PGeom = case Geom of
 		origin -> geom:default();
 		{geom,_Pos,_Radius} -> Geom;
 		_ -> geom:from_tuple(Geom)
 	    end,
-    P(Env, PGeom).
+    case whereis(simul) of
+	undefined -> error({no_simulation_running});
+	SPid -> SPid ! {ready, Name, self(), PGeom}
+    end,
+    receive
+	ok ->
+	    P(Env, PGeom)
+    end.
 
 update_location(Name, Pid, Loc) ->
     case whereis(simul) of

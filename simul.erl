@@ -1,16 +1,25 @@
 -module(simul).
--export([simul/4, write_state/2, geom_to_string/1]).
+-export([simul/3, write_state/2, geom_to_string/1]).
 -define(TIMEOUT, 5000).
--define(STEP_SIZE, 5).
+-define(STEP_SIZE, 2).
 
-simul(Chans, N, ProcsInfo, FilePath) ->
+waitfor_entities(0, ProcsInfo) ->
+    dict:map(fun (Pid, _) -> Pid ! ok end, ProcsInfo),
+    ProcsInfo;
+waitfor_entities(N, ProcsInfo) ->
+    receive
+	{ready, Name, From, Geom} ->
+	    waitfor_entities(N-1, dict:store(From, {Name, Geom}, ProcsInfo))
+    end.
+
+simul(Chans, N, FilePath) ->
+    ProcsInfo = waitfor_entities(N, dict:new()),
     {ok, Handle} = file:open(FilePath, [write]),
     io:format(Handle, "~B~n", [?STEP_SIZE]),
     Writer = spawn(?MODULE, write_state, [Handle, ?STEP_SIZE]),
     simul(Chans, N, ProcsInfo, 0, Writer).
 
-simul(Chans, 0, ProcsInfo, Time, Writer) ->
-    Writer ! {done},
+simul(Chans, 0, ProcsInfo, Time, _Writer) ->
     io:format("Simulation: ran for ~p time steps~n", [Time]),
     dict:map(fun (Pid, _) -> exit(Pid, kill) end, ProcsInfo),
     [exit(C, kill) || {_, C} <- Chans];
@@ -42,13 +51,13 @@ simul(Chans, N, ProcsInfo, Time, Writer) ->
 
 write_state(File, Step) ->
     receive
-	{done} ->
-	    file:close(File);
 	{Time, Info} when Time rem Step =:= 0 ->
 	    write_infos(File, Time, Info),
 	    write_state(File, Step);
 	{_Time, _Info} ->
 	    write_state(File, Step)
+    after 0 ->
+	    file:close(File)
     end.
 
 write_infos(File, Time, ProcsInfo) ->
