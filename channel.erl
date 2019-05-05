@@ -41,7 +41,8 @@ channel(Name, Listeners, MsgBox, Radius) ->
 			     true -> RPid ! {self(), SName, Msg},
 				     SPid ! {msg_sent},
 				     lists:delete({R, RPid}, Listeners);
-			     _ -> Listeners
+			     _ -> SPid ! {msg_dropped},
+				  Listeners
 			 end,
 		    channel(Name, Ls, MsgBox, Radius)
 	    end;
@@ -55,7 +56,7 @@ channel(Name, Listeners, MsgBox, Radius) ->
 		    case can_react(SPid, RPid, Radius) of
 			true -> RPid ! {self(), SName, Msg},
 				SPid ! {msg_sent};
-			_ -> ok
+			_ -> SPid ! {msg_dropped}
 		    end,
 		    channel(Name, Listeners, Q, Radius)
 	    end

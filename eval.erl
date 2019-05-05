@@ -69,7 +69,11 @@ build_process(Name, {send, Chan, Msg, P}) ->
 	    end,
 	    receive
 		{msg_sent} ->
-		    PProc(Env, Loc)
+		    PProc(Env, Loc);
+		{msg_dropped} ->
+		    NewLoc = geom:random_translate(Geom, ?DEFAULT_DIFFUSE_RATE),
+		    update_location(Name, self(), NewLoc),
+		    PProc(Env, NewLoc)
 	    end
     end;
 build_process(Name, {recv, Chan, Bind, P}) ->
