@@ -2,6 +2,7 @@
 -export([simul/3, write_state/2, geom_to_string/1]).
 -define(TIMEOUT, 5000).
 -define(STEP_SIZE, 5).
+-define(MAX_SIMULATION_TIME, 500).
 
 waitfor_entities(0, ProcsInfo) ->
     dict:map(fun (Pid, _) -> Pid ! ok end, ProcsInfo),
@@ -27,7 +28,7 @@ simul(Chans, 0, ProcsInfo, Time, _Writer) ->
     io:format("Simulation: ran for ~p time steps~n", [Time]),
     dict:map(fun (Pid, _) -> exit(Pid, kill) end, ProcsInfo),
     [exit(C, kill) || {_, C} <- Chans];
-simul(Chans, N, ProcsInfo, Time, Writer) ->
+simul(Chans, N, ProcsInfo, Time, Writer) when Time < ?MAX_SIMULATION_TIME ->
     receive
 	{done, _Name, ProcPid} ->
 	    Info = dict:erase(ProcPid, ProcsInfo),
@@ -52,7 +53,10 @@ simul(Chans, N, ProcsInfo, Time, Writer) ->
 	    simul(Chans, N, ProcsInfo, Time, Writer)
     after ?TIMEOUT ->
 	    simul(Chans, 0, ProcsInfo, Time, Writer)
-    end.
+    end;
+simul(Chans, _N, ProcsInfo, Time, Writer) ->
+    io:format("Simulation: max time limit reached~n"),
+    simul(Chans, 0, ProcsInfo, Time, Writer).
 
 write_state(File, Step) ->
     receive
