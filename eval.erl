@@ -115,7 +115,8 @@ build_process(Name, {choice, Ps}) ->
 
 entity_infos([], _Env, Procs) ->
     Procs;
-entity_infos([{EName, SpawnTo}|Ents], Env, Procs) when is_atom(SpawnTo), SpawnTo /= this ->
+entity_infos([{EName, SpawnTo}|Ents], Env, Procs)
+  when is_atom(SpawnTo), SpawnTo /= this ->
     {var, Val} = lookup(SpawnTo, Env),
     Proc = {EName, lookup(EName, Env), Val},
     entity_infos(Ents, Env, [Proc|Procs]);

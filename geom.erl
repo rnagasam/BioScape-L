@@ -48,3 +48,6 @@ add_pos(G1, G2) ->
     Dx = G1#geom.pos#pos.x + G2#geom.pos#pos.x,
     Dy = G1#geom.pos#pos.y + G2#geom.pos#pos.y,
     #geom{ pos = #pos{ x = Dx, y = Dy }, radius = G2#geom.radius }.
+
+intersects(G1, G2) ->
+    within(G1, G2, G1#geom.radius + G2#geom.radius).

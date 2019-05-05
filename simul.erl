@@ -1,5 +1,5 @@
 -module(simul).
--export([simul/3, write_state/2, geom_to_string/1]).
+-export([simul/3, write_state/2, geom_to_string/1, can_moveto/2]).
 -define(TIMEOUT, 5000).
 -define(STEP_SIZE, 5).
 -define(MAX_SIMULATION_TIME, 500).
@@ -12,6 +12,13 @@ waitfor_entities(N, ProcsInfo) ->
 	{ready, Name, From, Geom} ->
 	    waitfor_entities(N-1, dict:store(From, {Name, Geom}, ProcsInfo))
     end.
+
+can_moveto(ToLoc, ProcsInfo) ->
+    Intersects = dict:filter(fun(_ProcPid, {_ProcName, ProcLoc}) ->
+				     geom:intersects(ToLoc, ProcLoc)
+			     end,
+			     ProcsInfo),
+    dict:is_empty(Intersects).
 
 simul(Chans, N, FilePath) ->
     ProcsInfo = waitfor_entities(N, dict:new()),
