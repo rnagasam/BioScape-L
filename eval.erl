@@ -11,7 +11,6 @@ eval(Name, P, Env, Geom) ->
 		_ -> geom:from_tuple(Geom)
 	    end,
     InitGeom = geom:random_translate(PGeom, ?START_TRANSLATE),
-    io:format("~p: InitGeom: ~p~n", [Name, InitGeom]),
     case whereis(simul) of
 	undefined -> error({no_simulation_running});
 	SPid -> SPid ! {ready, Name, self(), InitGeom}
@@ -91,7 +90,7 @@ build_process(Name, {spawn, Ps, Q}) ->
 	    Loc = geom:random_translate(Geom, ?DEFAULT_DIFFUSE_RATE),
 	    update_location(Name, self(), Loc),
 	    Procs = [{P, lookup(P, Env), SpawnTo} || {P, SpawnTo} <- Ps],
-	    Ents = [{P, spawn(eval, eval, [Proc, Env, spawn_to_loc(Loc, SLoc)])}
+	    Ents = [{P, spawn(eval, eval, [P, Proc, Env, spawn_to_loc(Loc, SLoc)])}
 		    || {P, {_,{Proc, _PGeom}}, SLoc} <- Procs],
 	    %% TODO update with actual location of spawn'd process
 	    %% (using move_loc)
