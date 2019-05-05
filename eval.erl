@@ -1,7 +1,8 @@
 -module(eval).
 -export([lookup/2, build_process/2, eval/4]).
--define(DEFAULT_MOVE_LIMIT, 50).
--define(DEFAULT_DIFFUSE_RATE, 50).
+-define(DEFAULT_MOVE_LIMIT, 10).
+-define(DEFAULT_DIFFUSE_RATE, 10).
+-define(START_TRANSLATE, 25).
 
 eval(Name, P, Env, Geom) ->
     PGeom = case Geom of
@@ -9,13 +10,15 @@ eval(Name, P, Env, Geom) ->
 		{geom,_Pos,_Radius} -> Geom;
 		_ -> geom:from_tuple(Geom)
 	    end,
+    InitGeom = geom:random_translate(PGeom, ?START_TRANSLATE),
+    io:format("~p: InitGeom: ~p~n", [Name, InitGeom]),
     case whereis(simul) of
 	undefined -> error({no_simulation_running});
-	SPid -> SPid ! {ready, Name, self(), PGeom}
+	SPid -> SPid ! {ready, Name, self(), InitGeom}
     end,
     receive
 	ok ->
-	    P(Env, PGeom)
+	    P(Env, InitGeom)
     end.
 
 update_location(Name, Pid, Loc) ->
@@ -49,6 +52,7 @@ spawn_to_loc(Loc, SpawnTo) ->
 
 build_process(Name, {null}) ->
     fun (_Env, _Geom) ->
+	    io:format("Proc ~p done~n", [Name]),
 	    whereis(simul) ! {done, Name, self()}
     end;
 build_process(Name, {send, Chan, Msg, P}) ->
