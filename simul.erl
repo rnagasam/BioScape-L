@@ -1,7 +1,7 @@
 -module(simul).
 -export([simul/3, write_state/2, geom_to_string/1]).
 -define(TIMEOUT, 5000).
--define(STEP_SIZE, 2).
+-define(STEP_SIZE, 5).
 
 waitfor_entities(0, ProcsInfo) ->
     dict:map(fun (Pid, _) -> Pid ! ok end, ProcsInfo),
@@ -17,7 +17,11 @@ simul(Chans, N, FilePath) ->
     {ok, Handle} = file:open(FilePath, [write]),
     io:format(Handle, "~B~n", [?STEP_SIZE]),
     Writer = spawn(?MODULE, write_state, [Handle, ?STEP_SIZE]),
-    simul(Chans, N, ProcsInfo, 0, Writer).
+    simul(Chans, N, ProcsInfo, 0, Writer),
+    receive
+	{close_file} ->
+	    file:close(Handle)
+    end.
 
 simul(Chans, 0, ProcsInfo, Time, _Writer) ->
     io:format("Simulation: ran for ~p time steps~n", [Time]),
@@ -57,7 +61,7 @@ write_state(File, Step) ->
 	{_Time, _Info} ->
 	    write_state(File, Step)
     after 0 ->
-	    file:close(File)
+	    whereis(simul) ! {close_file}
     end.
 
 write_infos(File, Time, ProcsInfo) ->
