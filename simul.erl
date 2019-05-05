@@ -33,9 +33,10 @@ simul(Chans, N, ProcsInfo, Time, Writer) ->
 	    Info = dict:erase(ProcPid, ProcsInfo),
 	    Writer ! {Time, Info},
 	    simul(Chans, N-1, Info, Time+1, Writer);
-	{create, Name, ProcPid, Location} ->
+	{ready, Name, ProcPid, Location} ->
 	    Info = dict:store(ProcPid, {Name, Location}, ProcsInfo),
 	    Writer ! {Time, Info},
+	    ProcPid ! ok,
 	    simul(Chans, N+1, Info, Time+1, Writer);
 	{update, Name, ProcPid, Location} ->
 	    Info = dict:store(ProcPid, {Name, Location}, ProcsInfo),

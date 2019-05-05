@@ -71,7 +71,7 @@ build_process(Name, {send, Chan, Msg, P}) ->
 		{msg_sent} ->
 		    PProc(Env, Loc);
 		{msg_dropped} ->
-		    NewLoc = geom:random_translate(Geom, ?DEFAULT_DIFFUSE_RATE),
+		    NewLoc = geom:random_translate(Loc, ?DEFAULT_DIFFUSE_RATE),
 		    update_location(Name, self(), NewLoc),
 		    PProc(Env, NewLoc)
 	    end
@@ -94,11 +94,8 @@ build_process(Name, {spawn, Ps, Q}) ->
 	    Loc = geom:random_translate(Geom, ?DEFAULT_DIFFUSE_RATE),
 	    update_location(Name, self(), Loc),
 	    Procs = [{P, lookup(P, Env), SpawnTo} || {P, SpawnTo} <- Ps],
-	    Ents = [{P, spawn(eval, eval, [P, Proc, Env, spawn_to_loc(Loc, SLoc)])}
-		    || {P, {_,{Proc, _PGeom}}, SLoc} <- Procs],
-	    %% TODO update with actual location of spawn'd process
-	    %% (using move_loc)
-	    [whereis(simul) ! {create, PNam, Pid, Loc} || {PNam, Pid} <- Ents],
+	    [spawn(eval, eval, [P, Proc, Env, spawn_to_loc(Loc, SLoc)])
+	     || {P, {_, {Proc, _PGeom}}, SLoc} <- Procs],
 	    PProc(Env, Loc)
     end;
 build_process(Name, {move, P}) ->
