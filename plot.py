@@ -1,9 +1,10 @@
-import numpy as np
-from matplotlib import pyplot as plt
+import argparse
 from matplotlib import animation
+from matplotlib import pyplot as plt
+import numpy as np
 
 class BioScapeAnimate(object):
-    def __init__(self, resfile='/tmp/bioscape.out'):
+    def __init__(self, resfile):
         self.resfile = resfile
         self.species = set() # entities
         self.results = self.read_results()
@@ -67,3 +68,26 @@ class BioScapeAnimate(object):
         self.scat.set_sizes(s * 100)
         self.scat.set_array(np.array(c))
         return self.scat,
+
+    def save_animation(self, path, fps):
+        """Save animation in as mp4."""
+        try:
+            self.ani.save(path, fps=fps, writer='ffmpeg')
+        except StopIteration:
+            pass
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='BioScape^L plotting utility.')
+    parser.add_argument('infile', metavar='file', type=str,
+                        help='Input file containing BioScape^L simulation '
+                             'results')
+    parser.add_argument('-o', '--output', metavar='output', type=str,
+                        default=None, help='Output file (mp4)')
+    parser.add_argument('-f', '--frame-rate', metavar='fps', type=int,
+                        default=24, help='Frame-rate of output video')
+    args = parser.parse_args()
+    b = BioScapeAnimate(args.infile)
+    if args.output:
+        b.save_animation(args.output, args.frame_rate)
+    else:
+        plt.show()
