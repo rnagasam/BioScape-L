@@ -45,6 +45,8 @@ spawn_to_loc(Loc, SpawnTo) ->
     case SpawnTo of
 	this ->
 	    Loc;
+	{geom,_Pos,_Radius} ->
+	    SpawnTo;
 	_ ->
 	    geom:add_pos(Loc, geom:from_tuple(SpawnTo))
     end.
@@ -93,7 +95,7 @@ build_process(Name, {spawn, Ps, Q}) ->
     fun (Env, Geom) ->
 	    Loc = geom:random_translate(Geom, ?DEFAULT_DIFFUSE_RATE),
 	    update_location(Name, self(), Loc),
-	    Procs = [{P, lookup(P, Env), SpawnTo} || {P, SpawnTo} <- Ps],
+	    Procs = entity_infos(Ps, Env, []),
 	    [spawn(eval, eval, [P, Proc, Env, spawn_to_loc(Loc, SLoc)])
 	     || {P, {_, {Proc, _PGeom}}, SLoc} <- Procs],
 	    PProc(Env, Loc)
@@ -110,3 +112,13 @@ build_process(Name, {choice, Ps}) ->
 	    Route = lists:nth(rand:uniform(length(Ps)), Ps),
 	    (build_process(Name, Route))(Env, Geom)
     end.
+
+entity_infos([], _Env, Procs) ->
+    Procs;
+entity_infos([{EName, SpawnTo}|Ents], Env, Procs) when is_atom(SpawnTo), SpawnTo /= this ->
+    {var, Val} = lookup(SpawnTo, Env),
+    Proc = {EName, lookup(EName, Env), Val},
+    entity_infos(Ents, Env, [Proc|Procs]);
+entity_infos([{EName,SpawnTo}|Ents], Env, Procs) ->
+    Proc = {EName, lookup(EName, Env), SpawnTo},
+    entity_infos(Ents, Env, [Proc|Procs]).
