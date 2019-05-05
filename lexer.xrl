@@ -72,6 +72,9 @@ Rules.
 \} :
   {token,{cBrace,TokenLine,TokenChars}}.
 
+\, :
+  {token,{comma,TokenLine,TokenChars}}.
+
 \. :
   {token,{dot,TokenLine,TokenChars}}.
 

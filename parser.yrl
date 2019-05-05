@@ -1,8 +1,9 @@
 Nonterminals
-channel expression program.
+channel expression expressions program.
 
 Terminals
-num id 'send' 'recv' dot 'null' oParen cParen oBrace cBrace 'define' name semicolon new.
+num id 'send' 'recv' dot 'null' oParen cParen oBrace cBrace
+'define' name semicolon new comma.
 
 Rootsymbol program.
 
@@ -19,7 +20,14 @@ expression ->
 expression ->
     recv id oParen id cParen dot expression : { recv, '$2', '$4', '$7' }.
 expression ->
+    expressions : {choice, '$1'}.
+expression ->
     oParen expression cParen : '$2'.
+
+expressions ->
+    oBrace expression cBrace: '$2'.
+expressions ->
+    oBrace expression cBrace comma expressions: ['$2'] ++ '$5'.
 
 channel ->
     new id semicolon : ['$2'].
@@ -27,5 +35,5 @@ channel ->
     new id semicolon channel : ['$2'] ++ '$4'.
 
 program -> channel semicolon program : [{chans, '$1'}, '$3'].
-program -> expression : ['$1'].
+program -> expression semicolon : ['$1'].
 program -> expression semicolon program : ['$1'] ++ '$3'.
