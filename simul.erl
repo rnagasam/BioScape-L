@@ -23,16 +23,13 @@ can_moveto(ToLoc, ProcsInfo) ->
 simul(Chans, N, FilePath) ->
     ProcsInfo = waitfor_entities(N, dict:new()),
     {ok, Handle} = file:open(FilePath, [write]),
-    io:format(Handle, "~B~n", [?STEP_SIZE]),
     Writer = spawn(?MODULE, write_state, [Handle, ?STEP_SIZE]),
-    simul(Chans, N, ProcsInfo, 0, Writer),
-    receive
-	{close_file} ->
-	    file:close(Handle)
-    end.
+    Writer ! {write_step},
+    simul(Chans, N, ProcsInfo, 0, Writer).
 
-simul(Chans, 0, ProcsInfo, Time, _Writer) ->
+simul(Chans, 0, ProcsInfo, Time, Writer) ->
     io:format("Simulation: ran for ~p time steps~n", [Time]),
+    Writer ! {close_file},
     dict:map(fun (Pid, _) -> exit(Pid, kill) end, ProcsInfo),
     [exit(C, kill) || {_, C} <- Chans];
 simul(Chans, N, ProcsInfo, Time, Writer) when Time < ?MAX_SIMULATION_TIME ->
@@ -50,6 +47,12 @@ simul(Chans, N, ProcsInfo, Time, Writer) when Time < ?MAX_SIMULATION_TIME ->
 	    Info = dict:store(ProcPid, {Name, Location}, ProcsInfo),
 	    Writer ! {Time, Info},
 	    simul(Chans, N, Info, Time+1, Writer);
+	{moveto, ProcPid, Loc} ->
+	    case can_moveto(Loc, dict:erase(ProcPid, ProcsInfo)) of
+		true -> ProcPid ! ok;
+		_ -> ProcPid ! no
+	    end,
+	    simul(Chans, N, ProcsInfo, Time, Writer);
 	{get_location, ProcPid, From} ->
 	    % `channel' should check for failure in recv'd message
 	    From ! dict:find(ProcPid, ProcsInfo),
@@ -67,13 +70,17 @@ simul(Chans, _N, ProcsInfo, Time, Writer) ->
 
 write_state(File, Step) ->
     receive
+	{write_step} ->
+	    io:format(File, "~B~n", [Step]),
+	    write_state(File, Step);
+	{close_file} ->
+	    file:close(File);
 	{Time, Info} when Time rem Step =:= 0 ->
 	    write_infos(File, Time, Info),
 	    write_state(File, Step);
 	{_Time, _Info} ->
-	    write_state(File, Step)
-    after 0 ->
-	    whereis(simul) ! {close_file}
+	    write_state(File, Step);
+	Msg -> io:format("Writer: Unknown message: ~p~n", [Msg])
     end.
 
 write_infos(File, Time, ProcsInfo) ->

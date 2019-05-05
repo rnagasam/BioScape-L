@@ -4,6 +4,13 @@
 -define(DEFAULT_DIFFUSE_RATE, 10).
 -define(START_TRANSLATE, 25).
 
+get_simul() ->
+    case whereis(simul) of
+	undefined ->
+	    error({no_simulation_running});
+	SPid -> SPid
+    end.
+
 eval(Name, P, Env, Geom) ->
     PGeom = case Geom of
 		origin -> geom:default();
@@ -11,20 +18,16 @@ eval(Name, P, Env, Geom) ->
 		_ -> geom:from_tuple(Geom)
 	    end,
     InitGeom = geom:random_translate(PGeom, ?START_TRANSLATE),
-    case whereis(simul) of
-	undefined -> error({no_simulation_running});
-	SPid -> SPid ! {ready, Name, self(), InitGeom}
-    end,
+    SPid = get_simul(),
+    SPid ! {ready, Name, self(), InitGeom},
     receive
 	ok ->
 	    P(Env, InitGeom)
     end.
 
 update_location(Name, Pid, Loc) ->
-    case whereis(simul) of
-	undefined -> error({no_simulation_running});
-	SPid -> SPid ! {update, Name, Pid, Loc}
-    end.
+    SPid = get_simul(),
+    SPid ! {update, Name, Pid, Loc}.
 
 lookup(Key, Env) ->
     case lists:keyfind(Key, 2, Env) of
@@ -51,16 +54,28 @@ spawn_to_loc(Loc, SpawnTo) ->
 	    geom:add_pos(Loc, geom:from_tuple(SpawnTo))
     end.
 
+moveto(Name, Loc) ->
+    SPid = get_simul(),
+    SPid ! {moveto, self(), Loc},
+    receive
+	ok ->
+	    update_location(Name, self(), Loc);
+	no ->
+	    NewLoc = geom:random_translate(Loc, ?DEFAULT_DIFFUSE_RATE),
+	    moveto(Name, NewLoc)
+    end.
+
 build_process(Name, {null}) ->
     fun (_Env, _Geom) ->
 	    io:format("Proc ~p done~n", [Name]),
-	    whereis(simul) ! {done, Name, self()}
+	    SPid = get_simul(),
+	    SPid ! {done, Name, self()}
     end;
 build_process(Name, {send, Chan, Msg, P}) ->
     PProc = build_process(Name, P),
     fun (Env, Geom) ->
 	    Loc = geom:random_translate(Geom, ?DEFAULT_DIFFUSE_RATE),
-	    update_location(Name, self(), Loc),
+	    moveto(Name, Loc),
 	    CPid = get_channel(Chan, Env),
 	    case Msg of
 		this -> CPid ! {send, Name, self(), Loc};
@@ -74,7 +89,7 @@ build_process(Name, {send, Chan, Msg, P}) ->
 		    PProc(Env, Loc);
 		{msg_dropped} ->
 		    NewLoc = geom:random_translate(Loc, ?DEFAULT_DIFFUSE_RATE),
-		    update_location(Name, self(), NewLoc),
+		    moveto(Name, NewLoc),
 		    PProc(Env, NewLoc)
 	    end
     end;
@@ -82,7 +97,7 @@ build_process(Name, {recv, Chan, Bind, P}) ->
     PProc = build_process(Name, P),
     fun (Env, Geom) ->
 	    Loc = geom:random_translate(Geom, ?DEFAULT_DIFFUSE_RATE),
-	    update_location(Name, self(), Loc),
+	    moveto(Name, Loc),
 	    CPid = get_channel(Chan, Env),
 	    CPid ! {recv, Name, self()},
 	    receive
@@ -94,7 +109,7 @@ build_process(Name, {spawn, Ps, Q}) ->
     PProc = build_process(Name, Q),
     fun (Env, Geom) ->
 	    Loc = geom:random_translate(Geom, ?DEFAULT_DIFFUSE_RATE),
-	    update_location(Name, self(), Loc),
+	    moveto(Name, Loc),
 	    Procs = entity_infos(Ps, Env, []),
 	    [spawn(eval, eval, [P, Proc, Env, spawn_to_loc(Loc, SLoc)])
 	     || {P, {_, {Proc, _PGeom}}, SLoc} <- Procs],
@@ -104,7 +119,7 @@ build_process(Name, {move, P}) ->
     PProc = build_process(Name, P),
     fun (Env, Geom) ->
 	    Loc = geom:random_translate(Geom, ?DEFAULT_MOVE_LIMIT),
-	    update_location(Name, self(), Loc),
+	    moveto(Name, Loc),
 	    PProc(Env, Loc)
     end;
 build_process(Name, {choice, Ps}) ->
