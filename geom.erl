@@ -37,5 +37,17 @@ distance(G1, G2) ->
     Dy = G2#geom.pos#pos.y - G1#geom.pos#pos.y,
     math:sqrt(math:pow(Dx, 2) + math:pow(Dy, 2)).
 
+within(G1, G2, Radius) ->
+    distance(G1, G2) =< Radius.
+
 from_tuple({X, Y, Radius}) ->
     #geom{ pos = #pos{ x = X, y = Y }, radius = Radius }.
+
+add_pos(G1, G2) ->
+    % Note: G2's radius is returned as the new radius
+    Dx = G1#geom.pos#pos.x + G2#geom.pos#pos.x,
+    Dy = G1#geom.pos#pos.y + G2#geom.pos#pos.y,
+    #geom{ pos = #pos{ x = Dx, y = Dy }, radius = G2#geom.radius }.
+
+intersects(G1, G2) ->
+    within(G1, G2, G1#geom.radius + G2#geom.radius).

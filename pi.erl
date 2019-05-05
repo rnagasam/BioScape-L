@@ -4,23 +4,22 @@
 
 run([prog, ChanDefs, ProcDefs, RunCmds]) ->
     Chans = channel:build_channels(ChanDefs),
-    Procs = [{ Name, eval:build_process(Name, Def), Geom }
-	     || { define, Name, Geom, Def } <- ProcDefs],
-    NProcs = lists:foldr(fun ({ _P, X }, Acc) -> X + Acc end, 0, RunCmds),
-    ChansEnv = [{ chan, C, Chan } || { C, Chan } <- Chans],
-    ProcsEnv = [{ proc, P, {Proc, PGeom} } || { P, Proc, PGeom } <- Procs],
-    Simul = spawn(simul, simul, [Chans, NProcs]),
+    Procs = [{Name, eval:build_process(Name, Def), Geom}
+	     || {define, Name, Geom, Def} <- ProcDefs],
+    NProcs = lists:foldr(fun ({_P, X}, Acc) -> X + Acc end, 0, RunCmds),
+    ChansEnv = [{chan, C, Chan} || {C, Chan} <- Chans],
+    ProcsEnv = [{proc, P, {Proc, PGeom}} || {P, Proc, PGeom} <- Procs],
+    Simul = spawn(simul, simul, [Chans, NProcs, "/tmp/bioscape.out"]),
     register(simul, Simul),
-    [spawn_entity(P, N, ChansEnv ++ ProcsEnv) || { P, N } <- RunCmds].
+    [spawn_entity(P, N, ChansEnv ++ ProcsEnv) || {P, N} <- RunCmds],
+    ok.
 
 spawn_entity(P, N, InitEnv) ->
     case lists:keyfind(P, 2, InitEnv) of
-	{ proc, _P, {Proc, ProcGeom} } ->
-	    [spawn(eval, eval, [Proc, InitEnv, ProcGeom])
-	     || _ <- lists:seq(1, N)],
-	    io:format("Run: spawn'd ~p ~p's~n", [N, P]);
+	{proc, _P, {Proc, PGeom}} ->
+	    [spawn(eval, eval, [P, Proc, InitEnv, PGeom]) || _ <- lists:seq(1, N)];
 	_Else ->
-	    error({entity_not_found, { P, InitEnv }})
+	    error({entity_not_found, {P, InitEnv}})
     end.
 
 parse_string(Str) ->

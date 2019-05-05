@@ -1,18 +1,40 @@
 -module(eval).
--export([lookup/2, build_process/2, eval/3]).
--define(DEFAULT_MOVE_LIMIT, 2).
--define(DEFAULT_DIFFUSE_RATE, 0.5).
+-export([lookup/2, build_process/2, eval/4]).
+-define(DEFAULT_MOVE_LIMIT, 10).
+-define(DEFAULT_DIFFUSE_RATE, 10).
+-define(START_TRANSLATE, 25).
 
-eval(P, Env, Geom) ->
+get_simul() ->
+    case whereis(simul) of
+	undefined ->
+	    error({no_simulation_running});
+	SPid -> SPid
+    end.
+
+eval(Name, P, Env, Geom) ->
     PGeom = case Geom of
 		origin -> geom:default();
+		{geom,_Pos,_Radius} -> Geom;
 		_ -> geom:from_tuple(Geom)
 	    end,
-    P(Env, PGeom).
+    SPid = get_simul(),
+    SPid ! {ready, Name, self(), PGeom},
+    receive
+	ok ->
+	    P(Env, PGeom);
+	move_again ->
+	    InitGeom = geom:random_translate(PGeom, ?START_TRANSLATE),
+	    SPid ! {ready, Name, self(), InitGeom},
+	    eval(Name, P, Env, InitGeom)
+    end.
+
+update_location(Name, Pid, Loc) ->
+    SPid = get_simul(),
+    SPid ! {update, Name, Pid, Loc}.
 
 lookup(Key, Env) ->
     case lists:keyfind(Key, 2, Env) of
-	{ Type, _Key, Val } ->
+	{Type, _Key, Val} ->
 	    {Type, Val};
 	_Else ->
 	    error({key_not_found, Key, Env})
@@ -20,71 +42,104 @@ lookup(Key, Env) ->
 
 get_channel(Chan, Env) ->
     case lookup(Chan, Env) of
-	{ _Type, Ent } when is_pid(Ent) ->
+	{_Type, Ent} when is_pid(Ent) ->
 	    Ent;
 	Else -> error({not_a_channel, Else})
     end.
 
-build_process(Name, { null }) ->
-    fun (_Env, Geom) ->
-	    whereis(simul) ! { done },
-	    io:format("Process ~p terminated at ~p.~n",
-		      [Name, geom:get_pos(Geom)])
+spawn_to_loc({geom, FromPos, FromRad}, SpawnTo, Radius) ->
+    case SpawnTo of
+	this ->
+	    {geom, FromPos, Radius};
+	{geom, Pos, _R} ->
+	    {geom, Pos, Radius};
+	{X, Y, _R} ->
+	    geom:add_pos({geom, FromPos, FromRad},
+			 geom:from_tuple({X, Y, Radius}))
+    end.
+
+move_from(Loc, Lim) ->
+    To = geom:random_translate(Loc, Lim),
+    SPid = get_simul(),
+    SPid ! {moveto, self(), To},
+    receive
+	ok ->
+	    To;
+	no ->
+	    NewLoc = geom:random_translate(To, Lim),
+	    move_from(NewLoc, Lim)
+    end.
+
+build_process(Name, {null}) ->
+    fun (_Env, _Geom) ->
+	    io:format("Proc ~p done~n", [Name]),
+	    SPid = get_simul(),
+	    SPid ! {done, Name, self()}
     end;
-build_process(Name, { send, Chan, Msg, P }) ->
+build_process(Name, {send, Chan, Msg, P}) ->
     PProc = build_process(Name, P),
     fun (Env, Geom) ->
-	    Loc = geom:random_translate(Geom, ?DEFAULT_DIFFUSE_RATE),
+	    Loc = move_from(Geom, ?DEFAULT_DIFFUSE_RATE),
+	    update_location(Name, self(), Loc),
 	    CPid = get_channel(Chan, Env),
 	    case Msg of
-		this -> CPid ! { send, Name, self(), none, Loc };
+		this -> CPid ! {send, Name, self(), Loc};
 		_ when is_atom(Msg) ->
-		    { _, Val } = lookup(Msg, Env),
-		    CPid ! { send, Name, self(), Val, Loc };
-		_ -> CPid ! { send, Name, self(), Msg, Loc }
+		    {_, Val} = lookup(Msg, Env),
+		    CPid ! {send, Name, self(), Val};
+		_ -> CPid ! {send, Name, self(), Msg}
 	    end,
-	    io:format("Process ~p sent message ~p on chan ~p.~n",
-		      [Name, Msg, Chan]),
 	    receive
-		{ msg_sent } ->
-		    PProc(Env, Loc)
+		{msg_sent} ->
+		    PProc(Env, Loc);
+		{msg_dropped} ->
+		    NewLoc = move_from(Loc, ?DEFAULT_DIFFUSE_RATE),
+		    update_location(Name, self(), NewLoc),
+		    PProc(Env, NewLoc)
 	    end
     end;
-build_process(Name, { recv, Chan, Bind, P }) ->
+build_process(Name, {recv, Chan, Bind, P}) ->
     PProc = build_process(Name, P),
     fun (Env, Geom) ->
-	    Loc = geom:random_translate(Geom, ?DEFAULT_DIFFUSE_RATE),
+	    Loc = move_from(Geom, ?DEFAULT_DIFFUSE_RATE),
+	    update_location(Name, self(), Loc),
 	    CPid = get_channel(Chan, Env),
-	    CPid ! { recv, Name, self(), Loc },
-	    io:format("Process ~p waiting to recv message on chan ~p.~n",
-		      [Name, Chan]),
+	    CPid ! {recv, Name, self()},
 	    receive
-		{ CPid, _ProcName, Msg } ->
-		    io:format("Process ~p recv'd message ~p on chan ~p.~n",
-			      [Name, Msg, Chan]),
-		    PProc([{ var, Bind, Msg } | Env], Loc)
+		{CPid, _ProcName, Msg} ->
+		    PProc([{var, Bind, Msg} | Env], Loc)
 	    end
     end;
-build_process(Name, { spawn, Ps, Q }) ->
+build_process(Name, {spawn, Ps, Q}) ->
     PProc = build_process(Name, Q),
     fun (Env, Geom) ->
-	    Loc = geom:random_translate(Geom, ?DEFAULT_DIFFUSE_RATE),
-	    Procs = [lookup(P, Env) || P <- Ps],
-	    [spawn(?MODULE, eval, [Proc, Env, PGeom])
-	     || { _, {Proc, PGeom} } <- Procs],
-	    [whereis(simul) ! { create } || _P <- Ps],
-	    io:format("Process ~p spawn'd processes ~p.~n", [Name, Ps]),
+	    Loc = move_from(Geom, ?DEFAULT_DIFFUSE_RATE),
+	    update_location(Name, self(), Loc),
+	    Procs = entity_infos(Ps, Env, []),
+	    [spawn(eval, eval, [P, Proc, Env, spawn_to_loc(Loc, SLoc, Radius)])
+	     || {P, {_, {Proc, {_, _, Radius}}}, SLoc} <- Procs],
 	    PProc(Env, Loc)
     end;
-build_process(Name, { move, P }) ->
+build_process(Name, {move, P}) ->
     PProc = build_process(Name, P),
     fun (Env, Geom) ->
-	    Loc = geom:random_translate(Geom, ?DEFAULT_MOVE_LIMIT),
+	    Loc = move_from(Geom, ?DEFAULT_MOVE_LIMIT),
+	    update_location(Name, self(), Loc),
 	    PProc(Env, Loc)
     end;
-build_process(Name, { choice, Ps }) ->
+build_process(Name, {choice, Ps}) ->
     fun (Env, Geom) ->
 	    Route = lists:nth(rand:uniform(length(Ps)), Ps),
-	    io:format("Chose: ~p~n", [Route]),
 	    (build_process(Name, Route))(Env, Geom)
     end.
+
+entity_infos([], _Env, Procs) ->
+    Procs;
+entity_infos([{EName, SpawnTo}|Ents], Env, Procs)
+  when is_atom(SpawnTo), SpawnTo /= this ->
+    {var, Val} = lookup(SpawnTo, Env),
+    Proc = {EName, lookup(EName, Env), Val},
+    entity_infos(Ents, Env, [Proc|Procs]);
+entity_infos([{EName,SpawnTo}|Ents], Env, Procs) ->
+    Proc = {EName, lookup(EName, Env), SpawnTo},
+    entity_infos(Ents, Env, [Proc|Procs]).

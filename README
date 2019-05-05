@@ -65,6 +65,26 @@ BioScape^L abstract syntax
     G ::= 0 | G,X:T | G,u:T                         type environment
 
 
+Obtaining entity locations (`place')
+
+It might be convenient to have the entity send its location to the
+channel when sending or receiving messages.  The alternative is to
+have the `simul' process record the locations of all entities.  The
+`channel' process then has to query `simul' to obtain location
+information.
+
+Note that all of this is required since the `channel' needs to know
+where entities are.  Entities react only when they are "close-enough".
+
+
+Strategies for reactions
+
+What happens when entities are not close enough to react?  We might
+choose to have them wait (while allowing diffusion) until a reaction
+can take place, or we might discard the reaction and move on with the
+rest of the program.
+
+
 References
 
 [1] Compagnoni, Adriana et al. “A Calculus of Located Entities.”

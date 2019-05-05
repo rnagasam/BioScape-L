@@ -11,31 +11,53 @@ build_channels([]) ->
     [];
 build_channels([{C, Radius}|Cs]) ->
     CPid = spawn(?MODULE, channel, [C, [], queue:new(), Radius]),
-    [{ C, CPid } | build_channels(Cs)].
+    [{C, CPid} | build_channels(Cs)].
 
-channel(Name, Listeners, MsgBox, _Radius) ->
+get_location(Proc) ->
+    case whereis(simul) of
+	undefined -> error({no_simulation_running});
+	SPid -> SPid ! {get_location, Proc, self()}
+    end,
     receive
-	{ send, ProcName, ProcPid, Msg, _Location } ->
+	{ok, {_Name, Loc}} -> Loc;
+	error -> error({location_not_found, Proc})
+    end.
+
+can_react(P, Q, Radius) ->
+    PLoc = get_location(P),
+    QLoc = get_location(Q),
+    geom:within(PLoc, QLoc, Radius).
+
+channel(Name, Listeners, MsgBox, Radius) ->
+    receive
+	{send, SName, SPid, Msg} ->
 	    case Listeners of
 		[] ->
-		    Msgs = queue:in({ ProcPid, ProcName, Msg }, MsgBox),
-		    channel(Name, Listeners, Msgs, _Radius);
+		    Msgs = queue:in({SPid, SName, Msg}, MsgBox),
+		    channel(Name, Listeners, Msgs, Radius);
 		_ ->
-		    { Q, QPid } = pick_random(Listeners),
-		    QPid    ! { self(), ProcName, Msg },
-		    ProcPid ! { msg_sent },
-		    Ls = lists:delete({ Q, QPid }, Listeners),
-		    channel(Name, Ls, MsgBox, _Radius)
+		    {R, RPid} = pick_random(Listeners),
+		    Ls = case can_react(SPid, RPid, Radius) of
+			     true -> RPid ! {self(), SName, Msg},
+				     SPid ! {msg_sent},
+				     lists:delete({R, RPid}, Listeners);
+			     _ -> SPid ! {msg_dropped},
+				  Listeners
+			 end,
+		    channel(Name, Ls, MsgBox, Radius)
 	    end;
-	{ recv, ProcName, ProcPid, _Location } ->
+	{recv, RName, RPid} ->
 	    case queue:is_empty(MsgBox) of
 		true ->
-		    Ls = [{ ProcName, ProcPid } | Listeners],
-		    channel(Name, Ls, MsgBox, _Radius);
-		false -> % TODO: Make random choice, don't send to latest recv'r.
-		    {{ value, { QPid, QName, Msg }}, Q } = queue:out(MsgBox),
-		    ProcPid ! { self(), QName, Msg },
-		    QPid    ! { msg_sent },
-		    channel(Name, Listeners, Q, _Radius)
+		    Ls = [{RName, RPid} | Listeners],
+		    channel(Name, Ls, MsgBox, Radius);
+		_ -> % TODO: Make random choice, don't send to latest recv'r.
+		    {{value, {SPid, SName, Msg}}, Q} = queue:out(MsgBox),
+		    case can_react(SPid, RPid, Radius) of
+			true -> RPid ! {self(), SName, Msg},
+				SPid ! {msg_sent};
+			_ -> SPid ! {msg_dropped}
+		    end,
+		    channel(Name, Listeners, Q, Radius)
 	    end
     end.
