@@ -47,14 +47,15 @@ get_channel(Chan, Env) ->
 	Else -> error({not_a_channel, Else})
     end.
 
-spawn_to_loc(Loc, SpawnTo) ->
+spawn_to_loc({geom, FromPos, FromRad}, SpawnTo, Radius) ->
     case SpawnTo of
 	this ->
-	    Loc;
-	{geom,_Pos,_Radius} ->
-	    SpawnTo;
-	_ ->
-	    geom:add_pos(Loc, geom:from_tuple(SpawnTo))
+	    {geom, FromPos, Radius};
+	{geom, Pos, _R} ->
+	    {geom, Pos, Radius};
+	{X, Y, _R} ->
+	    geom:add_pos({geom, FromPos, FromRad},
+			 geom:from_tuple({X, Y, Radius}))
     end.
 
 move_from(Loc, Lim) ->
@@ -115,8 +116,8 @@ build_process(Name, {spawn, Ps, Q}) ->
 	    Loc = move_from(Geom, ?DEFAULT_DIFFUSE_RATE),
 	    update_location(Name, self(), Loc),
 	    Procs = entity_infos(Ps, Env, []),
-	    [spawn(eval, eval, [P, Proc, Env, spawn_to_loc(Loc, SLoc)])
-	     || {P, {_, {Proc, _PGeom}}, SLoc} <- Procs],
+	    [spawn(eval, eval, [P, Proc, Env, spawn_to_loc(Loc, SLoc, Radius)])
+	     || {P, {_, {Proc, {_, _, Radius}}}, SLoc} <- Procs],
 	    PProc(Env, Loc)
     end;
 build_process(Name, {move, P}) ->

@@ -47,7 +47,6 @@ simul(Chans, N, ProcsInfo, Time, Writer) when Time < ?MAX_SIMULATION_TIME ->
 	    Writer ! {Time, Info},
 	    simul(Chans, N-1, Info, Time+1, Writer);
 	{ready, Name, ProcPid, Location} ->
-	    io:format("Simul: proc ~p ready to start~n", [Name]),
 	    Info = dict:store(ProcPid, {Name, Location}, ProcsInfo),
 	    Writer ! {Time, Info},
 	    ProcPid ! ok,

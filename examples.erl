@@ -110,17 +110,49 @@ prog7() ->
 prog8() ->
     [prog, [{a, 25}],
 
-     [{define, procA, {-50.0, 50.0, 1.0},
+     [{define, procA, origin,
        {send, a, a,
 	{move,
-	 {spawn, [{procB, this}],
+	 {spawn, [{procB, {10.0, 10.0, 1.0}}],
 	  {null}}}}},
 
       {define, procB, origin,
        {choice, [
 		 {send, a, a, {spawn, [{procB, this}], {null}}},
 		 {recv, a, x, {send, x, a,
-			       {spawn, [{procA, this}], {null}}}}
+			       {spawn, [{procA, {10.0, 10.0, 2.0}}], {null}}}}
 		]}}],
 
-    [{procA, 10}, {procB, 10}]].
+    [{procA, 20}, {procB, 20}]].
+
+prog9() ->
+    [prog, [{a, 250}, {b, 250}],
+
+     [{define, procA, origin,
+       {send, a, "ack",
+	{recv, b, ack,
+	 {spawn, [{procB, this}],
+	  {null}}}}},
+
+     {define, procB, origin,
+      {recv, a, ack,
+       {send, b, "ack",
+	{spawn, [{procA, this}],
+	 {null}}}}}],
+
+     [{procA, 2}, {procB, 2}]].
+
+prog10() ->
+    [prog, [{a, 25}],
+
+     [{define, procA, {0.0, 0.0, 1.0},
+       {send, a, this,
+	{spawn, [{procB, this}],
+	 {null}}}},
+
+      {define, procB, {0.0, 0.0, 2.0},
+       {recv, a, x,
+	{spawn, [{procB, x}],
+	 {null}}}}],
+
+    [{procA, 25}, {procB, 1}]].
