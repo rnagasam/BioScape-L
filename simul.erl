@@ -10,7 +10,15 @@ waitfor_entities(0, ProcsInfo) ->
 waitfor_entities(N, ProcsInfo) ->
     receive
 	{ready, Name, From, Geom} ->
-	    waitfor_entities(N-1, dict:store(From, {Name, Geom}, ProcsInfo))
+	    case can_moveto(Geom, ProcsInfo) of
+		true ->
+		    Info = dict:store(From, {Name, Geom}, ProcsInfo),
+		    waitfor_entities(N-1, Info);
+		_ ->
+		    From ! move_again,
+		    waitfor_entities(N, ProcsInfo)
+	    end;
+	Msg -> io:format("Simul: got unknown message: ~p~n", [Msg])
     end.
 
 can_moveto(ToLoc, ProcsInfo) ->
@@ -39,6 +47,7 @@ simul(Chans, N, ProcsInfo, Time, Writer) when Time < ?MAX_SIMULATION_TIME ->
 	    Writer ! {Time, Info},
 	    simul(Chans, N-1, Info, Time+1, Writer);
 	{ready, Name, ProcPid, Location} ->
+	    io:format("Simul: proc ~p ready to start~n", [Name]),
 	    Info = dict:store(ProcPid, {Name, Location}, ProcsInfo),
 	    Writer ! {Time, Info},
 	    ProcPid ! ok,
@@ -49,8 +58,10 @@ simul(Chans, N, ProcsInfo, Time, Writer) when Time < ?MAX_SIMULATION_TIME ->
 	    simul(Chans, N, Info, Time+1, Writer);
 	{moveto, ProcPid, Loc} ->
 	    case can_moveto(Loc, dict:erase(ProcPid, ProcsInfo)) of
-		true -> ProcPid ! ok;
-		_ -> ProcPid ! no
+		true ->
+		    ProcPid ! ok;
+		_ ->
+		    ProcPid ! no
 	    end,
 	    simul(Chans, N, ProcsInfo, Time, Writer);
 	{get_location, ProcPid, From} ->
