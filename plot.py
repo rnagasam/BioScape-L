@@ -7,6 +7,8 @@ class BioScapeAnimate(object):
     def __init__(self, resfile):
         self.resfile = resfile
         self.species = set() # entities
+        self.minx = self.miny = float('inf')
+        self.maxx = self.maxy = float('-inf')
         self.results = self.read_results()
         self.scolors = self.generate_colors()
         self.dstream = self.data_stream()
@@ -34,6 +36,10 @@ class BioScapeAnimate(object):
                     dat = list(filter(bool, map(lambda x: x.strip(),
                                                 line.split('\t'))))
                     dat[1:] = list(map(float, dat[1:]))
+                    self.minx = min(self.minx, dat[1])
+                    self.miny = min(self.minx, dat[2])
+                    self.maxx = max(self.maxx, dat[1])
+                    self.maxy = max(self.maxy, dat[2])
                     self.species.add(dat[0])
                     results[cur].append(dat)
         return results
@@ -58,7 +64,9 @@ class BioScapeAnimate(object):
         x, y, s, c = next(self.dstream)
         self.scat = self.ax.scatter(x, y, c=c, s=s, vmin=0, vmax=1,
                                     cmap="jet", edgecolor="k")
-        self.ax.axis([-50, 50, -50, 50])
+        scale_factor = 1.25
+        self.ax.axis(np.array([self.minx, self.maxx,
+                               self.miny, self.maxy]) * scale_factor)
         return self.scat,
 
     def update(self, i):
@@ -80,7 +88,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='BioScape^L plotting utility.')
     parser.add_argument('infile', metavar='file', type=str,
                         help='Input file containing BioScape^L simulation '
-                             'results')
+                        'results')
     parser.add_argument('-o', '--output', metavar='output', type=str,
                         default=None, help='Output file (mp4)')
     parser.add_argument('-f', '--frame-rate', metavar='fps', type=int,
