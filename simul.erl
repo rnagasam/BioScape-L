@@ -1,25 +1,8 @@
 -module(simul).
 -export([simul/3, write_state/2, geom_to_string/1, can_moveto/2]).
--define(TIMEOUT, 5000).
+-define(TIMEOUT, 10000).
 -define(STEP_SIZE, 1).
 -define(MAX_SIMULATION_TIME, 10000).
-
-waitfor_entities(0, ProcsInfo) ->
-    dict:map(fun (Pid, _) -> Pid ! ok end, ProcsInfo),
-    ProcsInfo;
-waitfor_entities(N, ProcsInfo) ->
-    receive
-	{ready, Name, From, Geom} ->
-	    case can_moveto(Geom, ProcsInfo) of
-		true ->
-		    Info = dict:store(From, {Name, Geom}, ProcsInfo),
-		    waitfor_entities(N-1, Info);
-		_ ->
-		    From ! move_again,
-		    waitfor_entities(N, ProcsInfo)
-	    end;
-	Msg -> io:format("Simul: got unknown message: ~p~n", [Msg])
-    end.
 
 can_moveto(ToLoc, ProcsInfo) ->
     Intersects = dict:filter(fun(_ProcPid, {_ProcName, ProcLoc}) ->
@@ -29,7 +12,7 @@ can_moveto(ToLoc, ProcsInfo) ->
     dict:is_empty(Intersects).
 
 simul(Chans, N, FilePath) ->
-    ProcsInfo = waitfor_entities(N, dict:new()),
+    ProcsInfo = dict:new(),
     {ok, Handle} = file:open(FilePath, [write]),
     Writer = spawn(?MODULE, write_state, [Handle, ?STEP_SIZE]),
     Writer ! {write_step},
@@ -46,16 +29,8 @@ simul(Chans, N, ProcsInfo, Time, Writer, Count) when Time < ?MAX_SIMULATION_TIME
 	    Info = dict:erase(ProcPid, ProcsInfo),
 	    Writer ! {Time, Info},
 	    simul(Chans, N-1, Info, Time+1, Writer, Count);
-	{ready, Name, ProcPid, Location} when Count =:= 1 ->
-	    Info = dict:store(ProcPid, {Name, Location}, ProcsInfo),
-	    Writer ! {Time, Info},
-	    ProcPid ! ok,
-	    simul(Chans, N+1, Info, Time+1, Writer, Count-1);
-	{ready, Name, ProcPid, Location} ->
-	    Info = dict:store(ProcPid, {Name, Location}, ProcsInfo),
-	    ProcPid ! ok,
-	    simul(Chans, N+1, Info, Time, Writer, Count);
 	{update, Name, ProcPid, Location} when Count =:= 1 ->
+	    io:format("simul: got ALL updates~n"),
 	    Info = dict:store(ProcPid, {Name, Location}, ProcsInfo),
 	    Writer ! {Time, Info},
 	    simul(Chans, N, Info, Time+1, Writer, N);
@@ -77,7 +52,8 @@ simul(Chans, N, ProcsInfo, Time, Writer, Count) when Time < ?MAX_SIMULATION_TIME
 	{inspect_state} ->
 	    io:format("Simul: N: ~p, ProcsInfo: ~p~n",
 		      [N, dict:to_list(ProcsInfo)]),
-	    simul(Chans, N, ProcsInfo, Time, Writer, Count)
+	    simul(Chans, N, ProcsInfo, Time, Writer, Count);
+	Msg -> io:format("simul: got unexpected message: ~p~n", [Msg])
     after ?TIMEOUT ->
 	    simul(Chans, 0, ProcsInfo, Time, Writer, Count)
     end;

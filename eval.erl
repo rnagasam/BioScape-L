@@ -18,14 +18,17 @@ eval(Name, P, Env, Geom) ->
 		_ -> geom:from_tuple(Geom)
 	    end,
     SPid = get_simul(),
-    SPid ! {ready, Name, self(), PGeom},
+    SPid ! {update, Name, self(), PGeom},
+    SPid ! {moveto, self(), PGeom},
     receive
 	ok ->
 	    P(Env, PGeom);
-	move_again ->
+	no ->
+	    io:format("~p: Have to move again~n", [Name]),
 	    InitGeom = geom:random_translate(PGeom, ?START_TRANSLATE),
-	    SPid ! {ready, Name, self(), InitGeom},
-	    eval(Name, P, Env, InitGeom)
+	    SPid ! {update, Name, self(), InitGeom},
+	    eval(Name, P, Env, InitGeom);
+	Msg -> io:format("eval: got unexpected message: ~p~n", [Msg])
     end.
 
 update_location(Name, Pid, Loc) ->
