@@ -4,8 +4,9 @@ from matplotlib import pyplot as plt
 import numpy as np
 
 class BioScapeAnimate(object):
-    def __init__(self, resfile):
+    def __init__(self, resfile, scale_size):
         self.resfile = resfile
+        self.scale_size = scale_size
         self.species = set() # entities
         self.minx = self.miny = float('inf')
         self.maxx = self.maxy = float('-inf')
@@ -17,6 +18,7 @@ class BioScapeAnimate(object):
         self.fig, self.ax = plt.subplots()
         self.ani = animation.FuncAnimation(self.fig, self.update,
                                            init_func=self.init_plot,
+                                           frames=500,
                                            blit=True, repeat=False)
 
     def read_results(self):
@@ -73,7 +75,7 @@ class BioScapeAnimate(object):
         """Update scatter plot."""
         x, y, s, c = next(self.dstream)
         self.scat.set_offsets(np.column_stack((x, y)))
-        self.scat.set_sizes(s * 100)
+        self.scat.set_sizes(s * self.scale_size)
         self.scat.set_array(np.array(c))
         return self.scat,
 
@@ -93,8 +95,10 @@ if __name__ == "__main__":
                         default=None, help='Output file (mp4)')
     parser.add_argument('-f', '--frame-rate', metavar='fps', type=int,
                         default=24, help='Frame-rate of output video')
+    parser.add_argument('-s', '--scale-size', default=50, type=float,
+                        help='Factor to scale each entity by')
     args = parser.parse_args()
-    b = BioScapeAnimate(args.infile)
+    b = BioScapeAnimate(args.infile, args.scale_size)
     if args.output:
         b.save_animation(args.output, args.frame_rate)
     else:

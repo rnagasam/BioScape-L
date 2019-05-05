@@ -33,35 +33,28 @@ simul(Chans, N, FilePath) ->
     {ok, Handle} = file:open(FilePath, [write]),
     Writer = spawn(?MODULE, write_state, [Handle, ?STEP_SIZE]),
     Writer ! {write_step},
-    simul(Chans, N, ProcsInfo, 0, Writer, N).
+    simul(Chans, N, ProcsInfo, 0, Writer).
 
-simul(Chans, 0, ProcsInfo, Time, Writer, _Count) ->
+simul(Chans, 0, ProcsInfo, Time, Writer) ->
     io:format("Simulation: ran for ~p time steps~n", [Time]),
     Writer ! {close_file},
     dict:map(fun (Pid, _) -> exit(Pid, kill) end, ProcsInfo),
     [exit(C, kill) || {_, C} <- Chans];
-simul(Chans, N, ProcsInfo, Time, Writer, Count) when Time < ?MAX_SIMULATION_TIME ->
+simul(Chans, N, ProcsInfo, Time, Writer) when Time < ?MAX_SIMULATION_TIME ->
     receive
 	{done, _Name, ProcPid} ->
 	    Info = dict:erase(ProcPid, ProcsInfo),
 	    Writer ! {Time, Info},
-	    simul(Chans, N-1, Info, Time+1, Writer, Count);
-	{ready, Name, ProcPid, Location} when Count =:= 1 ->
-	    Info = dict:store(ProcPid, {Name, Location}, ProcsInfo),
-	    Writer ! {Time, Info},
-	    ProcPid ! ok,
-	    simul(Chans, N+1, Info, Time+1, Writer, Count-1);
+	    simul(Chans, N-1, Info, Time+1, Writer);
 	{ready, Name, ProcPid, Location} ->
 	    Info = dict:store(ProcPid, {Name, Location}, ProcsInfo),
-	    ProcPid ! ok,
-	    simul(Chans, N+1, Info, Time, Writer, Count);
-	{update, Name, ProcPid, Location} when Count =:= 1 ->
-	    Info = dict:store(ProcPid, {Name, Location}, ProcsInfo),
 	    Writer ! {Time, Info},
-	    simul(Chans, N, Info, Time+1, Writer, N);
+	    ProcPid ! ok,
+	    simul(Chans, N+1, Info, Time+1, Writer);
 	{update, Name, ProcPid, Location} ->
 	    Info = dict:store(ProcPid, {Name, Location}, ProcsInfo),
-	    simul(Chans, N, Info, Time, Writer, Count-1);
+	    Writer ! {Time, Info},
+	    simul(Chans, N, Info, Time+1, Writer);
 	{moveto, ProcPid, Loc} ->
 	    case can_moveto(Loc, dict:erase(ProcPid, ProcsInfo)) of
 		true ->
@@ -69,21 +62,21 @@ simul(Chans, N, ProcsInfo, Time, Writer, Count) when Time < ?MAX_SIMULATION_TIME
 		_ ->
 		    ProcPid ! no
 	    end,
-	    simul(Chans, N, ProcsInfo, Time, Writer, Count);
+	    simul(Chans, N, ProcsInfo, Time, Writer);
 	{get_location, ProcPid, From} ->
 	    % `channel' should check for failure in recv'd message
 	    From ! dict:find(ProcPid, ProcsInfo),
-	    simul(Chans, N, ProcsInfo, Time, Writer, Count);
+	    simul(Chans, N, ProcsInfo, Time, Writer);
 	{inspect_state} ->
 	    io:format("Simul: N: ~p, ProcsInfo: ~p~n",
 		      [N, dict:to_list(ProcsInfo)]),
-	    simul(Chans, N, ProcsInfo, Time, Writer, Count)
+	    simul(Chans, N, ProcsInfo, Time, Writer)
     after ?TIMEOUT ->
-	    simul(Chans, 0, ProcsInfo, Time, Writer, Count)
+	    simul(Chans, 0, ProcsInfo, Time, Writer)
     end;
-simul(Chans, _N, ProcsInfo, Time, Writer, Count) ->
+simul(Chans, _N, ProcsInfo, Time, Writer) ->
     io:format("Simulation: max time limit reached~n"),
-    simul(Chans, 0, ProcsInfo, Time, Writer, Count).
+    simul(Chans, 0, ProcsInfo, Time, Writer).
 
 write_state(File, Step) ->
     receive
