@@ -51,13 +51,16 @@ channel(Name, Listeners, MsgBox, Radius) ->
 		true ->
 		    Ls = [{RName, RPid} | Listeners],
 		    channel(Name, Ls, MsgBox, Radius);
-		_ -> % TODO: Make random choice, don't send to latest recv'r.
+		_ ->
+		    Ls = [{RName, RPid} | Listeners],
+		    {QName, QPid} = pick_random(Ls),
 		    {{value, {SPid, SName, Msg}}, Q} = queue:out(MsgBox),
-		    case can_react(SPid, RPid, Radius) of
-			true -> RPid ! {self(), SName, Msg},
+		    case can_react(SPid, QPid, Radius) of
+			true -> QPid ! {self(), SName, Msg},
 				SPid ! {msg_sent};
 			_ -> SPid ! {msg_dropped}
 		    end,
-		    channel(Name, Listeners, Q, Radius)
+		    Recvrs = lists:delete({QName, QPid}, Ls),
+		    channel(Name, Recvrs, Q, Radius)
 	    end
     end.
