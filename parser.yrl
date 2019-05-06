@@ -1,9 +1,9 @@
 Nonterminals
 channel definitions expression expressions program
-location namelist entity command commands.
+location namelist entity commands.
 
 Terminals
-num id 'send' 'recv' 'null' 'spawn' 'this' 'define' 'new' 'step' 'run'
+num id 'send' 'recv' 'null' 'spawn' 'this' 'define' 'new' 'run' 'step'
 name oParen cParen oBrace cBrace dot semicolon comma at.
 
 Rootsymbol program.
@@ -46,21 +46,20 @@ channel ->
 channel ->
     new id semicolon channel : ['$2'] ++ '$4'.
 
-command ->
-    run name num semicolon : {run, '$2', '$3'}.
-command ->
-    step num semicolon : {step, '$2'}.
-
 commands ->
-    command commands : ['$1'] ++ '$2'.
+    step num semicolon commands : [{step, '$2'}|'$4'].
+commands ->
+    run name num semicolon : {run, '$2', '$3'}.
+commands ->
+    run name num semicolon commands : [{run, '$2', '$3'}] ++ '$5'.
 
 location ->
     at num comma num comma num: {'$2', '$4', '$6'}.
 location ->
     this : {this}.
 
-definitions -> channel semicolon definitions : [{chans, '$1'}, '$3'].
 definitions -> expression semicolon : ['$1'].
+definitions -> channel semicolon definitions : [{chans, '$1'}, '$3'].
 definitions -> expression semicolon definitions : ['$1'] ++ '$3'.
 
 program ->
