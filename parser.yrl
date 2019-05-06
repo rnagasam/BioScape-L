@@ -9,6 +9,8 @@ name oParen cParen oBrace cBrace dot semicolon comma at.
 Rootsymbol program.
 
 entity ->
+    name dot oBrace at id cBrace : {'$1', '$5'}.
+entity ->
     name dot oBrace location cBrace : {'$1', '$4'}.
 
 expression ->
