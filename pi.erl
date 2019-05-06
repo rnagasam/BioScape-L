@@ -5,7 +5,14 @@
 
 run_file(FileName) ->
     {Prog, StepSize} = simplify(parse_file(FileName)),
-    run(Prog, StepSize).
+    run(Prog, StepSize),
+    receive
+	{'EXIT', Pid, Reason} ->
+	    io:format("Run: simulation ~p is done because: ~p~n", [Pid, Reason]);
+	Msg ->
+	    io:format("Run: got ~p~n", [Msg])
+    end,
+    init:stop().
 
 run([prog, ChanDefs, ProcDefs, RunCmds], StepSize) ->
     Chans = channel:build_channels(ChanDefs),
@@ -14,8 +21,9 @@ run([prog, ChanDefs, ProcDefs, RunCmds], StepSize) ->
     NProcs = lists:foldr(fun ({_P, X}, Acc) -> X + Acc end, 0, RunCmds),
     ChansEnv = [{chan, C, Chan} || {C, Chan} <- Chans],
     ProcsEnv = [{proc, P, {Proc, PGeom}} || {P, Proc, PGeom} <- Procs],
-    Simul = spawn(simul, simul, [Chans, NProcs, "/tmp/bioscape.out", StepSize]),
+    Simul = spawn_link(simul, simul, [Chans, NProcs, "/tmp/bioscape.out", StepSize]),
     register(simul, Simul),
+    process_flag(trap_exit, true),
     [spawn_entity(P, N, ChansEnv ++ ProcsEnv) || {P, N} <- RunCmds],
     ok.
 
