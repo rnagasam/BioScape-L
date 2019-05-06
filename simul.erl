@@ -1,7 +1,6 @@
 -module(simul).
--export([simul/3, write_state/2, geom_to_string/1, can_moveto/2]).
+-export([simul/4, write_state/2, geom_to_string/1, can_moveto/2]).
 -define(TIMEOUT, 5000).
--define(STEP_SIZE, 1).
 -define(MAX_SIMULATION_TIME, 10000).
 
 waitfor_entities(0, ProcsInfo) ->
@@ -28,10 +27,10 @@ can_moveto(ToLoc, ProcsInfo) ->
 			     ProcsInfo),
     dict:is_empty(Intersects).
 
-simul(Chans, N, FilePath) ->
+simul(Chans, N, FilePath, StepSize) ->
     ProcsInfo = waitfor_entities(N, dict:new()),
     {ok, Handle} = file:open(FilePath, [write]),
-    Writer = spawn(?MODULE, write_state, [Handle, ?STEP_SIZE]),
+    Writer = spawn(?MODULE, write_state, [Handle, StepSize]),
     Writer ! {write_step},
     simul(Chans, N, ProcsInfo, 0, Writer).
 

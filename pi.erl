@@ -1,6 +1,7 @@
 -module(pi).
 -export([run/1, spawn_entity/3, parse_string/1]).
 -register(simul).
+-define(STEP_SIZE, 5).
 
 run([prog, ChanDefs, ProcDefs, RunCmds]) ->
     Chans = channel:build_channels(ChanDefs),
@@ -9,7 +10,7 @@ run([prog, ChanDefs, ProcDefs, RunCmds]) ->
     NProcs = lists:foldr(fun ({_P, X}, Acc) -> X + Acc end, 0, RunCmds),
     ChansEnv = [{chan, C, Chan} || {C, Chan} <- Chans],
     ProcsEnv = [{proc, P, {Proc, PGeom}} || {P, Proc, PGeom} <- Procs],
-    Simul = spawn(simul, simul, [Chans, NProcs, "/tmp/bioscape.out"]),
+    Simul = spawn(simul, simul, [Chans, NProcs, "/tmp/bioscape.out", ?STEP_SIZE]),
     register(simul, Simul),
     [spawn_entity(P, N, ChansEnv ++ ProcsEnv) || {P, N} <- RunCmds],
     ok.
