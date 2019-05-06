@@ -1,7 +1,10 @@
 import argparse
+import os
+from subprocess import run, DEVNULL
+
+import numpy as np
 from matplotlib import animation
 from matplotlib import pyplot as plt
-import numpy as np
 
 class BioScapeAnimate(object):
     def __init__(self, resfile, scale_size):
@@ -86,19 +89,31 @@ class BioScapeAnimate(object):
         except StopIteration:
             pass
 
+def run_simulation(infile):
+    outfile = infile + '.out'
+    run(["erl", "-s", "pi", "run_file", infile, outfile],
+        stderr=DEVNULL, stdout=DEVNULL)
+    return outfile
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='BioScape^L plotting utility.')
-    parser.add_argument('infile', metavar='file', type=str,
-                        help='Input file containing BioScape^L simulation '
+    parser = argparse.ArgumentParser(description='BioScape^L')
+    parser.add_argument('infile', metavar='FILE', type=str,
+                        help='Input file containing BioScape^L program'
                         'results')
-    parser.add_argument('-o', '--output', metavar='output', type=str,
+    parser.add_argument('-o', '--output', metavar='OUTPUT', type=str,
                         default=None, help='Output file (mp4)')
-    parser.add_argument('-f', '--frame-rate', metavar='fps', type=int,
+    parser.add_argument('--simulation', action='store_true',
+                        help='FILE specifies an existing simulation output')
+    parser.add_argument('-f', '--frame-rate', metavar='FPS', type=int,
                         default=24, help='Frame-rate of output video')
     parser.add_argument('-s', '--scale-size', default=50, type=float,
                         help='Factor to scale each entity by')
     args = parser.parse_args()
-    b = BioScapeAnimate(args.infile, args.scale_size)
+
+    simfile = args.infile if args.simulation else run_simulation(args.infile)
+    print(simfile)
+
+    b = BioScapeAnimate(simfile, args.scale_size)
     if args.output:
         b.save_animation(args.output, args.frame_rate)
     else:

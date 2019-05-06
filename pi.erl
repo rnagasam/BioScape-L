@@ -1,11 +1,11 @@
 -module(pi).
--export([run/2, spawn_entity/3, parse_string/1, get_tokens/2, parse_file/1, run_file/1]).
+-export([run/3, spawn_entity/3, parse_string/1, get_tokens/2, parse_file/1, run_file/1]).
 -register(simul).
 -define(DEFAULT_STEP_SIZE, 5).
 
-run_file(FileName) ->
+run_file([FileName, OutFile]) ->
     {Prog, StepSize} = simplify(parse_file(FileName)),
-    run(Prog, StepSize),
+    run(Prog, StepSize, OutFile),
     receive
 	{'EXIT', Pid, Reason} ->
 	    io:format("Run: simulation ~p is done because: ~p~n", [Pid, Reason]);
@@ -14,14 +14,14 @@ run_file(FileName) ->
     end,
     init:stop().
 
-run([prog, ChanDefs, ProcDefs, RunCmds], StepSize) ->
+run([prog, ChanDefs, ProcDefs, RunCmds], StepSize, OutFile) ->
     Chans = channel:build_channels(ChanDefs),
     Procs = [{Name, eval:build_process(Name, Def), Geom}
 	     || {define, Name, Geom, Def} <- ProcDefs],
     NProcs = lists:foldr(fun ({_P, X}, Acc) -> X + Acc end, 0, RunCmds),
     ChansEnv = [{chan, C, Chan} || {C, Chan} <- Chans],
     ProcsEnv = [{proc, P, {Proc, PGeom}} || {P, Proc, PGeom} <- Procs],
-    Simul = spawn_link(simul, simul, [Chans, NProcs, "/tmp/bioscape.out", StepSize]),
+    Simul = spawn_link(simul, simul, [Chans, NProcs, OutFile, StepSize]),
     register(simul, Simul),
     process_flag(trap_exit, true),
     [spawn_entity(P, N, ChansEnv ++ ProcsEnv) || {P, N} <- RunCmds],
