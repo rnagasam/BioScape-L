@@ -31,7 +31,7 @@ Step = -step
 Rules.
 
 {Num} :
-  {token,{num,TokenLine,float(list_to_integer(TokenChars))}}.
+  {token,{num,float(list_to_integer(TokenChars))}}.
 
 {WhiteSpace} : skip_token.
 
@@ -42,7 +42,7 @@ Rules.
   {token,{'spawn',TokenLine,TokenChars}}.
 
 {Name} :
-  {token,{name,TokenLine,list_to_atom(TokenChars)}}.
+  {token,{name,list_to_atom(TokenChars)}}.
 
 {Str} :
   {token,{str,TokenLine,TokenChars}}.
@@ -72,7 +72,7 @@ Rules.
   {token,{'new',TokenLine,TokenChars}}.
 
 {Id} :
-  {token,{id,TokenLine,list_to_atom(TokenChars)}}.
+  {token,{id,list_to_atom(TokenChars)}}.
 
 \! :
   {token,{send,TokenLine,TokenChars}}.
@@ -102,7 +102,7 @@ Rules.
   {token,{semicolon,TokenLine,TokenChars}}.
 
 \@ :
-  {token,{at,TokenLine,TokenChars}}.
+  {token,{at,TokenChars}}.
 
 
 Erlang code.

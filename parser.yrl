@@ -54,7 +54,7 @@ commands ->
     run name num semicolon commands : [{run, '$2', '$3'}] ++ '$5'.
 
 location ->
-    at num comma num : {'$1', '$2'}.
+    at num comma num : {'$2', '$4'}.
 location ->
     at num comma num comma num: {'$2', '$4', '$6'}.
 location ->
@@ -65,4 +65,4 @@ definitions -> channel semicolon definitions : [{chans, '$1'}, '$3'].
 definitions -> expression semicolon definitions : ['$1'] ++ '$3'.
 
 program ->
-    definitions commands : [prog, '$1', '$2'].
+    definitions commands : ['$1', '$2'].
