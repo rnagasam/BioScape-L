@@ -14,12 +14,32 @@ Null = null
 
 Define = define
 
+Send = send
+
+Recv = recv
+
+Spawn = spawn
+
+New = new
+
+This = @this
+
+Run = -run
+
+Step = -step
+
 Rules.
 
 {Num} :
-  {token,{num,TokenLine,list_to_integer(TokenChars)}}.
+  {token,{num,TokenLine,float(list_to_integer(TokenChars))}}.
 
 {WhiteSpace} : skip_token.
+
+%% {Name} :
+%%   {token,{name,TokenLine,list_to_atom(TokenChars)}}.
+
+{Spawn} :
+  {token,{'spawn',TokenLine,TokenChars}}.
 
 {Name} :
   {token,{name,TokenLine,list_to_atom(TokenChars)}}.
@@ -30,8 +50,26 @@ Rules.
 {Define} :
   {token,{'define',TokenLine,TokenChars}}.
 
+{Send} :
+  {token,{'send',TokenLine,TokenChars}}.
+
+{Recv} :
+  {token,{'recv',TokenLine,TokenChars}}.
+
 {Null} :
   {token,{null,TokenLine,TokenChars}}.
+
+{This} :
+  {token,{'this',TokenLine,TokenChars}}.
+
+{Run} :
+  {token,{'run',TokenLine,TokenChars}}.
+
+{Step} :
+  {token,{'step',TokenLine,TokenChars}}.
+
+{New} :
+  {token,{'new',TokenLine,TokenChars}}.
 
 {Id} :
   {token,{id,TokenLine,list_to_atom(TokenChars)}}.
@@ -54,8 +92,17 @@ Rules.
 \} :
   {token,{cBrace,TokenLine,TokenChars}}.
 
+\, :
+  {token,{comma,TokenLine,TokenChars}}.
+
 \. :
   {token,{dot,TokenLine,TokenChars}}.
+
+\; :
+  {token,{semicolon,TokenLine,TokenChars}}.
+
+\@ :
+  {token,{at,TokenLine,TokenChars}}.
 
 
 Erlang code.
