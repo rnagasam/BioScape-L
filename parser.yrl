@@ -42,9 +42,9 @@ namelist ->
     entity comma namelist : ['$1'] ++ '$3'.
 
 channel ->
-    new id semicolon : ['$2'].
+    new id num semicolon : [{'$2', '$3'}].
 channel ->
-    new id semicolon channel : ['$2'] ++ '$4'.
+    new id num semicolon channel : [{'$2', '$3'}] ++ '$5'.
 
 commands ->
     step num semicolon commands : [{step, '$2'}|'$4'].

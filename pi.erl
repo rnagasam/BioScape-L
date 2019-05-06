@@ -1,5 +1,5 @@
 -module(pi).
--export([run/1, spawn_entity/3, parse_string/1, get_tokens/2, parse_file/1, simplify/1, simpl/1]).
+-export([run/1, spawn_entity/3, parse_string/1, get_tokens/2, parse_file/1, simplify/1]).
 -register(simul).
 -define(STEP_SIZE, 5).
 
@@ -46,3 +46,44 @@ parse_file(FileName) ->
 	ok -> AST;
 	_ -> io:format("Parse error: ~p~n", [AST])
     end.
+
+simplify([[{chans, Chans}, Definitions], Commands]) ->
+    Chns = lists:map(fun walk/1, Chans),
+    Defs = lists:map(fun walk/1, Definitions),
+    Coms = lists:map(fun walk/1, Commands),
+    case lists:keyfind(step, 1, Coms) of
+	{step, StepSize} ->
+	    [prog, StepSize, Chns, Defs,
+	     lists:delete({step, StepSize}, Coms)];
+	_ ->
+	    [prog, ?STEP_SIZE, Chns, Defs, Coms]
+    end.
+
+walk({name, X}) ->
+    X;
+walk({num, N}) ->
+    N;
+walk({id, X}) ->
+    X;
+walk({this}) ->
+    this;
+walk({run, Name, Num}) ->
+    {walk(Name), floor(walk(Num))};
+walk({step, Num}) ->
+    {step, floor(walk(Num))};
+walk({send, Name, Msg, Exp}) ->
+    {send, walk(Name), walk(Msg), walk(Exp)};
+walk({recv, Name, Var, Exp}) ->
+    {recv, walk(Name), walk(Var), walk(Exp)};
+walk({spawn, Ents, Exp}) ->
+    {spawn, lists:map(fun (X) -> walk(X) end, Ents), walk(Exp)};
+walk({choice, Options}) ->
+    {choice, lists:map(fun (X) -> walk(X) end, Options)};
+walk({define, Name, Geom, Exps}) ->
+    {define, walk(Name), walk(Geom), walk(Exps)};
+walk({A, B, C}) ->
+    {walk(A), walk(B), walk(C)};
+walk({A, B}) ->
+    {walk(A), walk(B)};
+walk(Other) ->
+    Other.
