@@ -55,6 +55,9 @@ spawn_to_loc({geom, FromPos, FromRad}, SpawnTo, Radius) ->
 	    {geom, Pos, Radius};
 	{X, Y, _R} ->
 	    geom:add_pos({geom, FromPos, FromRad},
+			 geom:from_tuple({X, Y, Radius}));
+	{X, Y} ->
+	    geom:add_pos({geom, FromPos, FromRad},
 			 geom:from_tuple({X, Y, Radius}))
     end.
 

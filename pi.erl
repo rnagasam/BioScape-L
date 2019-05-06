@@ -1,16 +1,20 @@
 -module(pi).
--export([run/1, spawn_entity/3, parse_string/1, get_tokens/2, parse_file/1, simplify/1]).
+-export([run/2, spawn_entity/3, parse_string/1, get_tokens/2, parse_file/1, run_file/1]).
 -register(simul).
--define(STEP_SIZE, 5).
+-define(DEFAULT_STEP_SIZE, 5).
 
-run([prog, ChanDefs, ProcDefs, RunCmds]) ->
+run_file(FileName) ->
+    {Prog, StepSize} = simplify(parse_file(FileName)),
+    run(Prog, StepSize).
+
+run([prog, ChanDefs, ProcDefs, RunCmds], StepSize) ->
     Chans = channel:build_channels(ChanDefs),
     Procs = [{Name, eval:build_process(Name, Def), Geom}
 	     || {define, Name, Geom, Def} <- ProcDefs],
     NProcs = lists:foldr(fun ({_P, X}, Acc) -> X + Acc end, 0, RunCmds),
     ChansEnv = [{chan, C, Chan} || {C, Chan} <- Chans],
     ProcsEnv = [{proc, P, {Proc, PGeom}} || {P, Proc, PGeom} <- Procs],
-    Simul = spawn(simul, simul, [Chans, NProcs, "/tmp/bioscape.out", ?STEP_SIZE]),
+    Simul = spawn(simul, simul, [Chans, NProcs, "/tmp/bioscape.out", StepSize]),
     register(simul, Simul),
     [spawn_entity(P, N, ChansEnv ++ ProcsEnv) || {P, N} <- RunCmds],
     ok.
@@ -53,10 +57,10 @@ simplify([[{chans, Chans}, Definitions], Commands]) ->
     Coms = lists:map(fun walk/1, Commands),
     case lists:keyfind(step, 1, Coms) of
 	{step, StepSize} ->
-	    [prog, StepSize, Chns, Defs,
-	     lists:delete({step, StepSize}, Coms)];
+	    {[prog, Chns, Defs, lists:delete({step, StepSize}, Coms)],
+	     StepSize};
 	_ ->
-	    [prog, ?STEP_SIZE, Chns, Defs, Coms]
+	    {[prog, Chns, Defs, Coms], ?DEFAULT_STEP_SIZE}
     end.
 
 walk({name, X}) ->
