@@ -77,6 +77,8 @@ walk({num, N}) ->
     N;
 walk({id, X}) ->
     X;
+walk({str, X}) ->
+    X;
 walk({this}) ->
     this;
 walk({run, Name, Num}) ->

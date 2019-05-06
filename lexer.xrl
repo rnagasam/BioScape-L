@@ -45,7 +45,7 @@ Rules.
   {token,{name,list_to_atom(TokenChars)}}.
 
 {Str} :
-  {token,{str,TokenLine,TokenChars}}.
+  {token,{str,TokenChars}}.
 
 {Define} :
   {token,{'define',TokenLine,TokenChars}}.
