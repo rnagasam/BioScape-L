@@ -24,6 +24,10 @@ New = new
 
 This = @this
 
+Run = -run
+
+Step = -step
+
 Rules.
 
 {Num} :
@@ -57,6 +61,12 @@ Rules.
 
 {This} :
   {token,{'this',TokenLine,TokenChars}}.
+
+{Run} :
+  {token,{'run',TokenLine,TokenChars}}.
+
+{Step} :
+  {token,{'step',TokenLine,TokenChars}}.
 
 {New} :
   {token,{'new',TokenLine,TokenChars}}.
