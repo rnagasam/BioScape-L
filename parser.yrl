@@ -32,7 +32,7 @@ expression ->
     oParen expression cParen : '$2'.
 
 expressions ->
-    oBrace expression cBrace: '$2'.
+    oBrace expression cBrace: ['$2'].
 expressions ->
     oBrace expression cBrace comma expressions: ['$2'] ++ '$5'.
 
@@ -49,10 +49,12 @@ channel ->
 commands ->
     step num semicolon commands : [{step, '$2'}|'$4'].
 commands ->
-    run name num semicolon : {run, '$2', '$3'}.
+    run name num semicolon : [{run, '$2', '$3'}].
 commands ->
     run name num semicolon commands : [{run, '$2', '$3'}] ++ '$5'.
 
+location ->
+    at num comma num : {'$1', '$2'}.
 location ->
     at num comma num comma num: {'$2', '$4', '$6'}.
 location ->

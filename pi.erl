@@ -1,5 +1,5 @@
 -module(pi).
--export([run/1, spawn_entity/3, parse_string/1]).
+-export([run/1, spawn_entity/3, parse_string/1, get_tokens/2, parse_file/1, simplify/1, simpl/1]).
 -register(simul).
 -define(STEP_SIZE, 5).
 
@@ -26,3 +26,23 @@ spawn_entity(P, N, InitEnv) ->
 parse_string(Str) ->
     {_ResultL, Tks, _L} = lexer:string(Str),
     parser:parse(Tks).
+
+get_tokens(InFile, Acc) ->
+    case io:request(InFile, {get_until,prompt,lexer,token,[1]}) of
+	{ok, Token, _EndLine} ->
+	    get_tokens(InFile, Acc ++ [Token]);
+	{error, token} ->
+	    exit(scanning_error);
+	{eof, _} ->
+	    Acc
+    end.
+
+parse_file(FileName) ->
+    {ok, InFile} = file:open(FileName, [read]),
+    Acc = get_tokens(InFile,[]),
+    file:close(InFile),
+    {Result, AST} = parser:parse(Acc),
+    case Result of
+	ok -> AST;
+	_ -> io:format("Parse error: ~p~n", [AST])
+    end.
