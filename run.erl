@@ -1,4 +1,4 @@
--module(pi).
+-module(run).
 -export([run/3, spawn_entity/3, parse_string/1, get_tokens/2, parse_file/1, run_file/1]).
 -register(simul).
 -define(DEFAULT_STEP_SIZE, 5).

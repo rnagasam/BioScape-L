@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import argparse
 import os
 from subprocess import run, DEVNULL
@@ -91,7 +93,7 @@ class BioScapeAnimate(object):
 
 def run_simulation(infile):
     outfile = infile + '.out'
-    run(["erl", "-s", "pi", "run_file", infile, outfile],
+    run(["erl", "-s", "run", "run_file", infile, outfile],
         stderr=DEVNULL, stdout=DEVNULL)
     return outfile
 
@@ -111,7 +113,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     simfile = args.infile if args.simulation else run_simulation(args.infile)
-    print(simfile)
 
     b = BioScapeAnimate(simfile, args.scale_size)
     if args.output:
