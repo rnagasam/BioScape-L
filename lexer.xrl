@@ -18,17 +18,24 @@ Send = send
 
 Recv = recv
 
+Spawn = spawn
+
 New = new
+
+This = @this
 
 Rules.
 
 {Num} :
-  {token,{num,TokenLine,list_to_integer(TokenChars)}}.
+  {token,{num,TokenLine,float(list_to_integer(TokenChars))}}.
 
 {WhiteSpace} : skip_token.
 
 %% {Name} :
 %%   {token,{name,TokenLine,list_to_atom(TokenChars)}}.
+
+{Spawn} :
+  {token,{'spawn',TokenLine,TokenChars}}.
 
 {Name} :
   {token,{name,TokenLine,list_to_atom(TokenChars)}}.
@@ -47,6 +54,9 @@ Rules.
 
 {Null} :
   {token,{null,TokenLine,TokenChars}}.
+
+{This} :
+  {token,{'this',TokenLine,TokenChars}}.
 
 {New} :
   {token,{'new',TokenLine,TokenChars}}.
@@ -80,6 +90,9 @@ Rules.
 
 \; :
   {token,{semicolon,TokenLine,TokenChars}}.
+
+\@ :
+  {token,{at,TokenLine,TokenChars}}.
 
 
 Erlang code.
