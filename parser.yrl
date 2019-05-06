@@ -3,7 +3,7 @@ channel definitions expression expressions program
 location namelist entity commands.
 
 Terminals
-num id str 'send' 'recv' 'null' 'spawn' 'this' 'define' 'new' 'run' 'step'
+num id str 'send' 'recv' 'null' 'spawn' 'this' 'define' 'new' 'run' 'step' 'move'
 name oParen cParen oBrace cBrace dot semicolon comma at.
 
 Rootsymbol program.
@@ -24,6 +24,8 @@ expression ->
     id : '$1'.
 expression ->
     null : {null}.
+expression ->
+    move dot expression : {move, '$3'}.
 expression ->
     send id oParen expression cParen dot expression : {send, '$2', '$4', '$7'}.
 expression ->

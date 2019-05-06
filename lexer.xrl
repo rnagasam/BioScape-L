@@ -20,6 +20,8 @@ Recv = recv
 
 Spawn = spawn
 
+Move = move
+
 New = new
 
 This = @this
@@ -40,6 +42,9 @@ Rules.
 
 {Spawn} :
   {token,{'spawn',TokenLine,TokenChars}}.
+
+{Move} :
+  {token,{'move',TokenLine,TokenChars}}.
 
 {Name} :
   {token,{name,list_to_atom(TokenChars)}}.
