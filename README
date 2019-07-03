@@ -1,88 +1,102 @@
-CS 694 Final Project
+BioScape^L
 
-Attempt at an implementation of a (simplified) version of BioScape^L
-[1].
-
-
-Todo
-
-  1. Run time checks in `build_process' (eval.erl)
-     - cannot send message directly to a process
-     - cannot recv messgae directly from a process
-  2. Entity geometries
-     - location in space
-     - `mov' command
-     - diffusion
-     - random movement
-     - `this' message
-     - `build_process' should return a function with 2 parameters
-  3. Parameters in process definitions
-     - for private channels, other input
-  4. Parser
-  5. Type checker
+An interpreter for a pi-calculus with spatial locations[1].  This
+implementation does not statically type check programs, works only
+with 2D space, and doesn't perform well when the number of processes
+(also called entities) is large.
 
 
-Notes
+Syntax
 
-Erlang repr (pi-calculus):
+    <num> ::= [0-9][0-9]*
+    <id> ::= [A-Za-z][0-9a-zA-Z_]*
+    <msg> ::= \'[0-9a-zA-Z_]*\'
 
-    TERM ::= { null }
-           | { send, Chan, Msg, TERM }
-           | { recv, Chan, Msg, TERM }
-           | { new, Chan, TERM }
-           | { spawn, [ TERM ] }
-           | { repeat, TERM }
+    <location> ::= @ <num> , <num>
+                 | @this
 
+    <exp> ::= <num>
+            | <id>
+	    | <msg>
+            | null
+            | move . <exp>
+	    | send <id> ( <exp> ) . <exp>
+	    | recv <id> ( <exp> ) . <exp>
+	    | spawn <ents> . <exp>
+	    | <choice>
 
-BioScape^L abstract syntax
+    <exps> ::= <exp> <exps>
+             | <exp>
 
-    P, Q ::= 0                                         empty process
-           | X(d)_d                          located entity instance
-           | P | Q                              parallel composition
-           | (va@d,d:chan{T}).P                          restriction
+    <choice> ::= { <exp> } , <choice>
+               | { <exp> }
 
-    M ::= pi.P [+ M]                      choice of prefixed process
+    <ent> ::= <name> . { <location> , <num> }
+            | <name> . { <location> }
 
-    pi ::= delay@r                                             delay
-         | !u(d)                                              output
-         | ?u(x)                                               input
-         | mov                                                  move
+    <ents> ::= <ent> , <ents>
+             | <ent>
 
-    N ::= M | (va@d,d:chan{T}).N                   restricted choice
+    <definition> ::= define <ent> ( <exps> ) ;
 
-    u ::= a | b | ... | x | y | ...                      identifiers
+    <definitions> ::= <definition> <definitions>
+                    | <definition>
 
-    d ::= u | c | this | d1,...,dn | () | d.i | op(d)    expressions
+    <chan> ::= new <id> <num> ;
 
-    v ::= a | b | ... | c | () | v1,...,vn         expression values
+    <chans> ::= <chan> ; <chans>
+              | <chan> ;
 
-    T ::= chan{T} | fl | T1 x ... x Tn | Top         expresion types
+    <comm> ::= -run <id> <num> ;
+             | -step <num> ;
 
-    D ::= 0 | D,X(x:T) = N^{geom}                 entity definitions
+    <comms> ::= <comm> <comms>
+              | <comm>
 
-    E ::= 0 | E,a@r,rad:chan{T}                 channel declarations
-
-    G ::= 0 | G,X:T | G,u:T                         type environment
-
-
-Obtaining entity locations (`place')
-
-It might be convenient to have the entity send its location to the
-channel when sending or receiving messages.  The alternative is to
-have the `simul' process record the locations of all entities.  The
-`channel' process then has to query `simul' to obtain location
-information.
-
-Note that all of this is required since the `channel' needs to know
-where entities are.  Entities react only when they are "close-enough".
+    <program> ::= <chans> <definitions> <comms>
 
 
-Strategies for reactions
+Example program
 
-What happens when entities are not close enough to react?  We might
-choose to have them wait (while allowing diffusion) until a reaction
-can take place, or we might discard the reaction and move on with the
-rest of the program.
+The program shown below defines a channel `a' with a reaction radius
+of 25, a process/entity `A' at the origin with radius 1 and a
+process/entity `B' at the origin with radius 2.  Note that the initial
+location is only approximate -- the entities are spawned somewhere
+"near" the origin and do not overlap.
+
+`A' sends the message 'ack' on channel `a' and `B' receives a message
+on channel `a' and binds it the variable `x'.  The step command
+indicates that the system should record the locations of all entities
+every 5 time steps and the run commands inform the system to simulate
+a situation with 10 of each entity.  The result is a video which shows
+plots of the locations of entities over time.
+
+    new a 25;;
+
+    define A.{@0,0,1}(
+        send a ('ack').
+	null
+    );
+
+    define B.{@0,0,2}(
+        recv a (x).
+	null
+    );
+
+    -step 5;
+    -run A 10;
+    -run B 10;
+
+
+Running
+
+Dependencies: Erlang, Python 3, matplotlib
+
+    $ git clone https://www.github.com/rnagasam/BioScape-L.git
+    $ cd BioScape-L
+    $ ./bioscape example.bsp
+
+Run `bioscape -h' to view all supported options.
 
 
 References

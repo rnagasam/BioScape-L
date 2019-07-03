@@ -1,0 +1,15 @@
+new a 25;;
+
+define A.{@0,0,1}(
+    send a ('ack').
+    null
+);
+
+define B.{@0,0,2}(
+    recv a (x).
+    null
+);
+
+-step 5;
+-run A 10;
+-run B 10;
